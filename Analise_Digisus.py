@@ -289,7 +289,7 @@ def criar_escala_colorida(nao_iniciados, max_nao_iniciados):
 # Função principal do Streamlit
 # Função principal do Streamlit
 def main():
-    st.image('Logo.png', width=100)
+    st.image('Logo.png')
     st.title('Situação do DigiSUS - Módulo Planejamento')
     st.markdown('*As barras correspondem ao número de instrumentos não alimentados no sistema.*')
 
