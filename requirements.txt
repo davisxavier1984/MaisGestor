@@ -8,3 +8,4 @@ google-generativeai
 streamlit_option_menu
 matplotlib
 pyUFbr
+unidecode
