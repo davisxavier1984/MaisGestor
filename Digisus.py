@@ -14,7 +14,7 @@ import time
 from streamlit_option_menu import option_menu
 
 # Display the logo at the top of the page, centered
-st.image('Logo.jpg', width=100)
+st.image('logo_maisgestor.png')
 
 hide_st_style = """
     <style>
