@@ -1,39 +1,265 @@
 import os
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
 import requests
 import tempfile
-import json
+import google.generativeai as genai
+import base64
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from email.mime.text import MIMEText
+import time
+from streamlit_option_menu import option_menu
+import datetime
 
-# Função para carregar o estado de envio de emails de um arquivo JSON
-def carregar_estado_emails():
-    if os.path.exists("emails_enviados.json"):
-        with open("emails_enviados.json", "r") as f:
-            return json.load(f)
-    return {}
+# Display the logo at the top of the page, centered
+st.image('Logo.jpg', width=100)
 
-# Função para salvar o estado de envio de emails em um arquivo JSON
-def salvar_estado_emails(emails_enviados):
-    with open("emails_enviados.json", "w") as f:
-        json.dump(emails_enviados, f)
+data_atual = datetime.date.today()
+data_formatada = data_atual.strftime("%d de %B de %Y")
 
-# Função para criar uma checkbox para cada município e registrar o envio de email
-def registrar_emails_por_municipio(df, emails_enviados):
-    st.subheader("Registro de Envio de E-mails por Município")
-    for municipio in df['MUNICIPIO'].unique():
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.write(municipio)
-        with col2:
-            enviado = emails_enviados.get(municipio, False)
-            email_enviado = st.checkbox("Email enviado", value=enviado, key=municipio)
-            emails_enviados[municipio] = email_enviado
-    salvar_estado_emails(emails_enviados)
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
 
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+
+from datetime import datetime, timedelta
+
+# Função para calcular os prazos exatos dos documentos
+
+def calcular_prazos_por_fase(fases):
+    dados = []
+
+    # Considera apenas as fases '2018-2021' e '2022-2025'
+    fases_consideradas = ['2018-2021', '2022-2025']
+    
+    for item in fases:
+        fase = item[0]
+        exercicio = item[1]
+        
+        if fase not in fases_consideradas:
+            continue
+        
+        # Define os anos de início e fim da fase
+        fase_inicio_ano, fase_fim_ano = map(int, fase.split('-'))
+        fase_inicio = datetime(fase_inicio_ano, 1, 1)
+        fase_fim = datetime(fase_fim_ano, 1, 1)
+        
+        # Datas para o PMS e execução da fase
+        pms_prazo = fase_inicio if exercicio == 0 else None
+        pms_execucao_inicio = fase_inicio if exercicio == 0 else None
+        pms_execucao_fim = fase_fim if exercicio == 0 else None
+        
+        if exercicio != 0:
+            # Calcula o prazo do RAG para o ano seguinte ao exercício atual
+            rag_prazo = datetime(exercicio + 1, 3, 30)
+            
+            # Define o prazo do PAS para 1º de outubro do ano corrente
+            pas_prazo = datetime(exercicio, 10, 1)
+            
+            # Calcula os prazos dos RDQA nos quadrimestres correspondentes
+            rdqa_prazos = [
+                datetime(exercicio, 6, 2),
+                datetime(exercicio, 9, 1),
+                datetime(exercicio, 12, 1),
+                datetime(exercicio + 1, 3, 3)
+            ]
+            rdqa_prazos = [rdqa.strftime("%d de %B de %Y") for rdqa in rdqa_prazos]
+        else:
+            rag_prazo = None
+            pas_prazo = None
+            rdqa_prazos = [None, None, None, None]
+        
+        dados.append({
+            'Fase': fase,
+            'Exercício': exercicio,
+            'PMS': pms_prazo.strftime("%d de %B de %Y") if pms_prazo else None,
+            'PMS Execução Início': pms_execucao_inicio.strftime("%d de %B de %Y") if pms_execucao_inicio else None,
+            'PMS Execução Fim': pms_execucao_fim.strftime("%d de %B de %Y") if pms_execucao_fim else None,
+            'RAG': rag_prazo.strftime("%d de %B de %Y") if rag_prazo else None,
+            'PAS': pas_prazo.strftime("%d de %B de %Y") if pas_prazo else None,
+            '1º RDQA': rdqa_prazos[0],
+            '2º RDQA': rdqa_prazos[1],
+            '3º RDQA': rdqa_prazos[2],
+            '4º RDQA': rdqa_prazos[3]
+        })
+    
+    df_prazos = pd.DataFrame(dados)
+    return df_prazos
+
+# Exemplo de uso
+fases_dados = [
+    ('2018-2021', 0), ('2018-2021', 2018), ('2018-2021', 2019), ('2018-2021', 2020), ('2018-2021', 2021),
+    ('2022-2025', 0), ('2022-2025', 2022), ('2022-2025', 2023), ('2022-2025', 2024), ('2022-2025', 2025)
+]
+
+df_prazos = calcular_prazos_por_fase(fases_dados)
+
+tabela_ideal_dados = {
+    'FASE': ['2018-2021', '2018-2021', '2018-2021', '2018-2021', '2018-2021', '2022-2025', '2022-2025', '2022-2025', '2022-2025', '2022-2025'],
+    'EXERCICIO': [0, 2018, 2019, 2020, 2021, 0, 2022, 2023, 2024, 2025],
+    'PMS': ['Aprovado', '', '', '', '', 'Aprovado', '', '', '', ''],
+    'PAS': ['', 'Aprovado', 'Aprovado', 'Aprovado', 'Aprovado', '', 'Aprovado', 'Aprovado', 'Aprovado', 'Aprovado'],
+    '1º RDQA': ['', 'Avaliado', 'Avaliado', 'Avaliado', 'Avaliado', '', 'Avaliado', 'Avaliado', 'Avaliado', 'Não Iniciado'],
+    '2º RDQA': ['', 'Avaliado', 'Avaliado', 'Avaliado', 'Avaliado', '', 'Avaliado', 'Avaliado', 'Avaliado', 'Não Iniciado'],
+    '3º RDQA': ['', 'Avaliado', 'Avaliado', 'Avaliado', 'Avaliado', '', 'Avaliado', 'Avaliado', 'Não Iniciado', 'Não Iniciado'],
+    'RAG': ['', 'Aprovado', 'Aprovado', 'Aprovado', 'Aprovado', '', 'Aprovado', 'Aprovado', 'Não Iniciado', 'Não Iniciado']
+}
+tabela_ideal = pd.DataFrame(tabela_ideal_dados)
+
+
+
+# Função para analisar a tabela usando a API Google Generative AI
+def analisar_dataframe_gemini(df: pd.DataFrame, api_key: str, prompt: str, municipio: str, model: str = 'gemini-1.5-flash', temperature: float = 0, stop_sequence: str = '17') -> str:
+    """
+    Usa a API Google Generative AI para analisar um DataFrame de acordo com o prompt fornecido.
+
+    Parâmetros:
+    df (pd.DataFrame): DataFrame com os dados a serem analisados.
+    api_key (str): Chave da API para autenticação.
+    prompt (str): O prompt de análise que orienta o modelo.
+    municipio (str): Nome do município a ser incluído na análise.
+    model (str): Modelo do Google Generative AI a ser usado (default: 'gemini-1.5-flash').
+    temperature (float): Controla a criatividade e variabilidade das respostas (default: 0.7).
+    stop_sequence (str): Sequência de parada para a geração de conteúdo (default: '\n').
+
+    Retorna:
+    str: Análise gerada pelo modelo Google Generative AI.
+    """
+    # Configura a chave da API
+    genai.configure(api_key=api_key)
+
+    # Converte o DataFrame para uma string formatada
+    df_text = df.to_string(index=False) if isinstance(df, pd.DataFrame) else df
+
+    # Cria o prompt completo com a tabela e o nome do município
+    full_prompt = f"{prompt}\n\nAqui está a tabela de dados para o município de {municipio}:\n\n{df_text}"
+    
+    # Configura o modelo e a geração de conteúdo
+    config = genai.GenerationConfig(temperature=temperature, stop_sequences=[stop_sequence])
+    model = genai.GenerativeModel(model, system_instruction=None)
+    
+    # Executa a geração de conteúdo com o modelo especificado
+    response = model.generate_content(contents=[full_prompt], generation_config=config)
+
+    # Retorna o texto da resposta ou uma mensagem de erro em branco
+    return response.text.strip() if response and response.text.strip() else "Nenhum resultado gerado. Por favor, verifique o prompt e tente novamente."
+
+
+
+
+# Função para formatar as cores da Tabela
+def highlight_cells(val):
+   
+    if val in ['Aprovado', 'Avaliado', 'Aprovado com Ressalvas']:
+        color = 'green'
+        font_color = 'white'
+    elif val in ['Não Iniciado', 'Não Aprovado']:
+        color = 'red'
+        font_color = 'white'
+    elif val in ['Em Análise no Conselho de Saúde', 'Em Elaboração', 'Retornado para Ajustes']:
+        color = 'yellow'
+        font_color = 'black'
+    else:
+        color = ''
+        font_color = 'black'  # Cor padrão para o texto
+    return f'background-color: {color}; color: {font_color}'
+
+# Função para gerar a tabela formatada
+def gerar_tabela_formatada(df, municipio):
+    tabela_municipio = df[df['MUNICIPIO'] == municipio]
+    if tabela_municipio.empty:
+        return pd.DataFrame()
+    # Identificar linhas com PMS e zerar outras colunas
+    pms_index = tabela_municipio[tabela_municipio['TIPO_INSTRUMENTO'] == 'PMS'].index
+    # Transferir conteúdo de "Plano de Saúde" já foi tratado na carga dos dados
+    tabela_municipio.loc[tabela_municipio['TIPO_INSTRUMENTO'] == 'Plano de Saúde', 'TIPO_INSTRUMENTO'] = 'PMS'
+    # Separar as linhas de PMS e exercícios
+    pms_lines = tabela_municipio[tabela_municipio['TIPO_INSTRUMENTO'] == 'PMS']
+    exercicios_lines = tabela_municipio[tabela_municipio['TIPO_INSTRUMENTO'] != 'PMS']
+    # Ordenar os exercícios e concatenar PMS antes deles
+    exercicios_lines = exercicios_lines.sort_values(by=['FASE', 'EXERCICIO'])
+    tabela_municipio = pd.concat([pms_lines, exercicios_lines])
+    tabela_formatada = tabela_municipio.pivot_table(index=['FASE', 'EXERCICIO'],
+                                                    columns='TIPO_INSTRUMENTO',
+                                                    values='SITUACAO',
+                                                    aggfunc=lambda x: x).reset_index()
+    tabela_formatada.insert(0, 'MUNICÍPIO', municipio)
+    tabela_formatada.fillna('', inplace=True)
+    # Remover a coluna "Pactuação" se presente
+    if 'Pactuação' in tabela_formatada.columns:
+        tabela_formatada.drop(columns=['Pactuação'], inplace=True)
+    # Garantir que as colunas PMS e PAS estejam presentes
+    if 'PMS' not in tabela_formatada.columns:
+        tabela_formatada['PMS'] = ''
+    if 'PAS' not in tabela_formatada.columns:
+        tabela_formatada['PAS'] = ''
+    # Reordenar colunas
+    colunas_ordem = ['FASE', 'EXERCICIO', 'PMS', 'PAS'] + [col for col in tabela_formatada.columns if col not in ['MUNICÍPIO', 'FASE', 'EXERCICIO', 'PMS', 'PAS']]
+    tabela_formatada = tabela_formatada[colunas_ordem]
+    return tabela_formatada
+
+# Função para carregar credenciais OAuth2 e armazenar em session_state
+def carregar_credenciais():
+    if 'creds' in st.session_state:
+        return st.session_state['creds']
+        
+    creds = None
+
+    # Verifica se o arquivo de token existe e o carrega
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+
+    # Se as credenciais não estão válidas, executa o fluxo OAuth2
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)  # Usando run_local_server
+            
+        # Salva o token para uso futuro
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    # Armazena as credenciais em session_state para reutilização
+    st.session_state['creds'] = creds
+    return creds
+
+
+
+# Função para criar a mensagem do email
+def criar_mensagem(remetente, destinatario, assunto, conteudo):
+    mensagem = MIMEText(conteudo)
+    mensagem['to'] = destinatario
+    mensagem['from'] = remetente
+    mensagem['subject'] = assunto
+    return {'raw': base64.urlsafe_b64encode(mensagem.as_bytes()).decode()}
+
+# Função para enviar o email
+def enviar_email(remetente, destinatario, assunto, conteudo):
+    creds = carregar_credenciais()
+    try:
+        # Constrói o serviço da API do Gmail
+        service = build('gmail', 'v1', credentials=creds)
+        mensagem = criar_mensagem(remetente, destinatario, assunto, conteudo)
+        # Envia o email usando a API do Gmail
+        enviado = service.users().messages().send(userId="me", body=mensagem).execute()
+        return f"Mensagem enviada com sucesso! Em breve entraremos em contato."
+
+    except Exception as e:
+        return f"Erro ao enviar email: {e}"
+    
 # Função para mapear estados para os seus respectivos códigos UF
 def get_uf_code(state):
-    state = state.upper()  # Converte o estado para maiúsculas
     uf_codes = {
         'AC': '12', 'AL': '27', 'AM': '13', 'AP': '16', 'BA': '29', 'CE': '23',
         'DF': '53', 'ES': '32', 'GO': '52', 'MA': '21', 'MG': '31', 'MS': '50',
@@ -41,85 +267,46 @@ def get_uf_code(state):
         'RJ': '33', 'RN': '24', 'RO': '11', 'RR': '14', 'RS': '43', 'SC': '42',
         'SE': '28', 'SP': '35', 'TO': '17'
     }
-    return uf_codes.get(state)
+    return uf_codes.get(state.upper())
 
-# Função para contar o número de instrumentos não iniciados por estado
-def contar_nao_iniciados_por_estado():
-    estados = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO']
-    total_nao_iniciados_por_estado = []
-    for estado in estados:
-        df = load_data_from_state(estado)
-        if not df.empty:
-            contagem_nao_iniciados = contar_nao_iniciados(df)
-            total_nao_iniciados = contagem_nao_iniciados['NaoIniciados'].sum()
-            total_nao_iniciados_por_estado.append({'Estado': estado, 'NaoIniciados': total_nao_iniciados})
-    return pd.DataFrame(total_nao_iniciados_por_estado)
-
-# Função para criar o gráfico da Situação Nacional
-def criar_grafico_situacao_por_estado(df_situacao_estado):
-    df_situacao_estado = df_situacao_estado.sort_values(by='NaoIniciados', ascending=False)
-    fig, ax = plt.subplots(figsize=(12, 8))
-    ax.barh(df_situacao_estado['Estado'], df_situacao_estado['NaoIniciados'], color='blue')
-    ax.set_xlabel('Estado')
-    ax.set_ylabel('Quantidade de Instrumentos Não Iniciados')
-    ax.set_title('Situação Nacional - Quantidade de Instrumentos Não Iniciados por Estado')
-    st.pyplot(fig)
-
-# Função para formatar as cores da Tabela
-def highlight_cells(val):
-    if val in ['Aprovado', 'Avaliado', 'Aprovado com Ressalvas']:
-        color = 'green'
-    elif val in ['Não Iniciado', 'Não Aprovado']:
-        color = 'red'
-    elif val in ['Em Análise no Conselho de Saúde', 'Em Elaboração', 'Retornado para Ajustes']:
-        color = 'yellow'
-    else:
-        color = ''
-    return f'background-color: {color}'
-
-# Função para baixar e renomear o arquivo
-def download_and_rename_file(state):
+@st.cache_data
+def Carregando_arquivos(state):
     uf_code = get_uf_code(state)
     if uf_code is None:
         st.error(f"Código da UF para o estado '{state}' não encontrado.")
         return None
     url = f'https://digisusgmp.saude.gov.br/v1.5/transparencia/extracao/csv?uf={uf_code}'
-    temp_dir = tempfile.gettempdir()  # Diretório temporário seguro para escrita
-    local_file = os.path.join(temp_dir, f'{state}.csv')  # Nome do arquivo no diretório temporário
-
+    temp_dir = tempfile.gettempdir()
+    local_file = os.path.join(temp_dir, f'{state}.csv')
     try:
-        response = requests.get(url)  # Fazer a requisição usando requests
+        response = requests.get(url)
         if response.status_code == 200:
             with open(local_file, 'wb') as f:
-                f.write(response.content)  # Escrever o conteúdo baixado no arquivo local
+                f.write(response.content)
         else:
             st.error(f"Erro ao baixar o arquivo. Código de status: {response.status_code}")
             return None
     except Exception as e:
         st.error(f"Erro ao baixar o arquivo: {e}")
         return None
-
     return local_file
 
-# Função para carregar os dados com tratamento de erros
+@st.cache_data
 def load_data_from_state(state):
-    local_file = download_and_rename_file(state)
+    local_file = Carregando_arquivos(state)
     if local_file is None:
         return pd.DataFrame()
-
     try:
-        df = pd.read_csv(local_file, delimiter=';', on_bad_lines='skip')  # Ignorar linhas com erros de tokenização
+        df = pd.read_csv(local_file, delimiter=';', on_bad_lines='skip')
     except pd.errors.ParserError as e:
         st.error(f"Erro ao ler o arquivo CSV: {e}")
         return pd.DataFrame()
     except FileNotFoundError:
         st.error(f"Arquivo {local_file} não encontrado.")
         return pd.DataFrame()
-
     if 'REGIAO' not in df.columns:
         st.error(f"A coluna 'REGIAO' não foi encontrada no arquivo {local_file}.")
         return pd.DataFrame()
-
     df['EXERCICIO'] = df['EXERCICIO'].fillna(0).astype(int).astype(str)
     df.loc[df['SITUACAO'].isnull(), 'SITUACAO'] = 'Não Iniciado'
     df['TIPO_INSTRUMENTO'] = df['TIPO_INSTRUMENTO'].replace({
@@ -127,290 +314,169 @@ def load_data_from_state(state):
         'Programação Anual de Saúde': 'PAS',
         'Plano de Saúde': 'PMS'
     })
-
     return df
 
-# Função para contar o número de instrumentos não iniciados por município
-def contar_nao_iniciados(df):
-    df_nao_iniciados = df[df['SITUACAO'] == 'Não Iniciado']
-    contagem = df_nao_iniciados.groupby('MUNICIPIO').size().reset_index(name='NaoIniciados')
-    return contagem
+# Autenticação automática ao iniciar o aplicativo
+if 'creds' not in st.session_state:
+    carregar_credenciais()
 
-# Função para gerar a tabela formatada
-def gerar_tabela_formatada(df, municipio, regional):
-    tabela_municipio = df[(df['MUNICIPIO'] == municipio) & (df['REGIAO'] == regional)]
-    if tabela_municipio.empty:
-        return pd.DataFrame()
-        
-    pms_index = tabela_municipio[tabela_municipio['TIPO_INSTRUMENTO'] == 'PMS'].index
-    tabela_municipio.loc[tabela_municipio['TIPO_INSTRUMENTO'] == 'Plano de Saúde', 'TIPO_INSTRUMENTO'] = 'PMS'
+def contato():
     
-    pms_lines = tabela_municipio[tabela_municipio['TIPO_INSTRUMENTO'] == 'PMS']
-    exercicios_lines = tabela_municipio[tabela_municipio['TIPO_INSTRUMENTO'] != 'PMS']
-    exercicios_lines = exercicios_lines.sort_values(by=['FASE', 'EXERCICIO'])
-    tabela_municipio = pd.concat([pms_lines, exercicios_lines])
-    
-    tabela_formatada = tabela_municipio.pivot_table(index=['FASE', 'EXERCICIO'],
-                                                    columns='TIPO_INSTRUMENTO',
-                                                    values='SITUACAO',
-                                                    aggfunc=lambda x: x).reset_index()
-    tabela_formatada.insert(0, 'REGIONAL', regional)
-    tabela_formatada.insert(0, 'MUNICÍPIO', municipio)
-    tabela_formatada.fillna('', inplace=True)
-    
-    if 'Pactuação' in tabela_formatada.columns:
-        tabela_formatada.drop(columns=['Pactuação'], inplace=True)
-    if 'PMS' not in tabela_formatada.columns:
-        tabela_formatada['PMS'] = ''
-    if 'PAS' not in tabela_formatada.columns:
-        tabela_formatada['PAS'] = ''
-        
-    colunas_ordem = ['MUNICÍPIO', 'REGIONAL', 'FASE', 'EXERCICIO', 'PMS', 'PAS'] + [col for col in tabela_formatada.columns if col not in ['MUNICÍPIO', 'REGIONAL', 'FASE', 'EXERCICIO', 'PMS', 'PAS']]
-    tabela_formatada = tabela_formatada[colunas_ordem]
-    return tabela_formatada
+    st.title('Formulário de Contato')
 
-# Função para criar uma barra colorida proporcional ao número de instrumentos não iniciados
-def criar_escala_colorida(nao_iniciados, max_nao_iniciados):
-    proporcao = nao_iniciados / max_nao_iniciados
-    cor = f'rgb({int(255 * proporcao)}, {int(255 * (1 - proporcao))}, 0)'
-    largura = int(proporcao * 100)
-    barra = f"<div style='background-color:{cor}; width:{largura}%; height:10px; display:inline-block;'></div>"
-    return barra
+    if 'creds' in st.session_state:
+        with st.form(key='form_email'):
+            estado = st.session_state['estado_selecionado']
+            municipio = st.session_state['municipio']
+            remetente = st.text_input('Seu Email :red[*]')
+            assunto = st.text_input("Contato (Fone/Whatsapp)")
+            conteudo = st.text_area("Deixe uma mensagem", placeholder=f'Olá, sou de {municipio}-{estado}, e gostaria de mais informações!')
+            submit_button = st.form_submit_button(label='Enviar')
 
-# Função para criar o gráfico completo por regional
-def criar_grafico_completo(df, regional, max_nao_iniciados):
-    municipios_na_regiao = df[df['REGIAO'] == regional]
-    contagem_nao_iniciados = contar_nao_iniciados(municipios_na_regiao)
-    contagem_nao_iniciados = contagem_nao_iniciados.sort_values(by='NaoIniciados', ascending=False)
-    cores = [(1.0, 1 - (nao_iniciados / max_nao_iniciados), 0.0, 1.0) for nao_iniciados in contagem_nao_iniciados['NaoIniciados']]
-    fig, ax = plt.subplots(figsize=(10, 8))
-    barras = ax.barh(contagem_nao_iniciados['MUNICIPIO'], contagem_nao_iniciados['NaoIniciados'], color=cores)
-    ax.set_xlabel('Número de Instrumentos Não Iniciados')
-    ax.set_ylabel('Município')
-    ax.set_title(f'Instrumentos Não Iniciados na Regional {regional}')
-    st.pyplot(fig)
+        destinatario_fixo = 'sconsultoria2024@gmail.com'
 
-# Função para criar o gráfico para todos os municípios de um estado
-def criar_grafico_estado_completo(df):
-    contagem_nao_iniciados = contar_nao_iniciados(df)
-    contagem_nao_iniciados = contagem_nao_iniciados.sort_values(by='NaoIniciados', ascending=False)
-    max_nao_iniciados = contagem_nao_iniciados['NaoIniciados'].max()
-    cores = [(1.0, 1 - (nao_iniciados / max_nao_iniciados), 0.0, 1.0) for nao_iniciados in contagem_nao_iniciados['NaoIniciados']]
-    fig, ax = plt.subplots(figsize=(10, 12))
-    ax.barh(contagem_nao_iniciados['MUNICIPIO'], contagem_nao_iniciados['NaoIniciados'], color=cores)
-    ax.set_xlabel('Número de Instrumentos Não Iniciados')
-    ax.set_ylabel('Município')
-    ax.set_title(f'Instrumentos Não Iniciados por Município no Estado Selecionado')
-    st.pyplot(fig)
+        if submit_button:
+            if remetente and assunto and conteudo:
+                #municipio = st.session_state['municipio']
+                #estado = st.session_state['estado_selecionado']
+                conteudo = f"{conteudo}\n\nMunicípio: {municipio}\nEstado: {estado}"
+                status = enviar_email(remetente, destinatario_fixo, assunto, conteudo)
+                if "sucesso" in status:
+                    st.success(status)
+                else:
+                    st.error(status)
+            else:
+                st.error("Por favor, preencha todos os campos antes de enviar.")
+    else:
+        st.warning("Aguarde, autenticando com o Google...")
 
-# Função para contar o número de instrumentos não iniciados por regional
-def contar_nao_iniciados_por_regional(df):
-    df_nao_iniciados = df[df['SITUACAO'] == 'Não Iniciado']
-    contagem = df_nao_iniciados.groupby('REGIAO').size().reset_index(name='NaoIniciados')
-    return contagem
-
-def criar_grafico_por_regional(df):
-    contagem_nao_iniciados = contar_nao_iniciados_por_regional(df)
-    contagem_nao_iniciados = contagem_nao_iniciados.sort_values(by='NaoIniciados', ascending=False)
-    fig, ax = plt.subplots(figsize=(10, 8))
-    ax.barh(contagem_nao_iniciados['REGIAO'], contagem_nao_iniciados['NaoIniciados'], color='blue')
-    ax.set_xlabel('Regional')
-    ax.set_ylabel('Número de Instrumentos Não Iniciados')
-    ax.set_title('Instrumentos Não Iniciados por Regional')
-    st.pyplot(fig)
-
-# Função para carregar o estado de emails de um arquivo JSON
-def carregar_estado_emails():
-    if os.path.exists("emails_enviados.json"):
-        with open("emails_enviados.json", "r") as f:
-            return json.load(f)
-    return {}
-
-# Função para salvar o estado de emails em um arquivo JSON
-def salvar_estado_emails(emails_enviados):
-    with open("emails_enviados.json", "w") as f:
-        json.dump(emails_enviados, f)
-
-# Função para registrar o envio de emails por município
-def registrar_emails_por_municipio(df, emails_enviados):
-    for municipio in df['MUNICIPIO'].unique():
-        col1, col2, col3 = st.columns([1, 1, 3])
-        with col1:
-            email_enviado = st.checkbox("", value=emails_enviados.get(municipio, False), key=municipio)
-            emails_enviados[municipio] = email_enviado
-        with col2:
-            st.write(municipio)
-        with col3:
-            st.write(" ")
-    salvar_estado_emails(emails_enviados)
-
-def criar_escala_colorida(nao_iniciados, max_nao_iniciados):
-    proporcao = nao_iniciados / max_nao_iniciados
-    cor = f'rgb({int(255 * proporcao)}, {int(255 * (1 - proporcao))}, 0)'
-    largura = int(proporcao * 100)
-    barra = f"<div style='background-color:{cor}; width:{largura}%; height:10px; display:inline-block; border-radius:5px;'></div>"
-    return barra
-
-
-# Função principal do Streamlit
-
-# Função para carregar o estado de envio de emails de um arquivo JSON
-def carregar_estado_emails():
-    if os.path.exists("emails_enviados.json"):
-        with open("emails_enviados.json", "r") as f:
-            return json.load(f)
-    return {}
-
-# Função para salvar o estado de envio de emails em um arquivo JSON
-def salvar_estado_emails(emails_enviados):
-    with open("emails_enviados.json", "w") as f:
-        json.dump(emails_enviados, f)
-
-# Função para criar uma checkbox para cada município e registrar o envio de email
-def registrar_emails_por_municipio(df, emails_enviados):
-    st.subheader("Registro de Envio de E-mails por Município")
-    for municipio in df['MUNICIPIO'].unique():
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            email_enviado = st.checkbox("", value=emails_enviados.get(municipio, False), key=municipio)
-            emails_enviados[municipio] = email_enviado
-        with col2:
-            st.write(municipio)
-    salvar_estado_emails(emails_enviados)
-
-# Função para criar a barra colorida
-def criar_escala_colorida(nao_iniciados, max_nao_iniciados):
-    proporcao = nao_iniciados / max_nao_iniciados
-    cor = f'rgb({int(255 * proporcao)}, {int(255 * (1 - proporcao))}, 0)'
-    largura = int(proporcao * 100)
-    barra = f"<div style='background-color:{cor}; width:{largura}%; height:10px; display:inline-block;'></div>"
-    return barra
-
-# Função principal do Streamlit
-# Função principal do Streamlit
 def main():
-    st.image('logo_maisgestor.png')
     st.title('Situação do DigiSUS - Módulo Planejamento')
-    st.markdown('*As barras correspondem ao número de instrumentos não alimentados no sistema.*')
-
-    # Carrega o estado de emails enviados
-    emails_enviados = carregar_estado_emails()
-
-    if 'page' not in st.session_state:
-        st.session_state['page'] = 'Análise por Município'
-
-    st.sidebar.title("Selecione a Página")
+    st.markdown('*Consulte a situação do DigiSUS no seu município*')
 
     estados = ['AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO']
-    estado_selecionado = st.sidebar.selectbox('Selecione o Estado', estados)
-    df = load_data_from_state(estado_selecionado)
+    estado_selecionado = st.selectbox('Selecione o Estado', estados)
 
-    if df.empty:
-        st.warning("Nenhum dado encontrado para o estado selecionado.")
-        return
+    municipios_validos = []
+    df = pd.DataFrame()
+    if estado_selecionado:
+        df = load_data_from_state(estado_selecionado)
+        if not df.empty:
+            municipios_validos = df['MUNICIPIO'].dropna().unique()
 
-    if 'REGIAO' not in df.columns:
-        st.error(f"O arquivo do estado {estado_selecionado} não contém a coluna 'REGIAO'.")
-        return
+    municipio = st.selectbox('Selecione o Município', municipios_validos)
 
-    st.sidebar.markdown(
-        "<p style='color:white; position:fixed; bottom:0; width:50%; text-align:left;'>"
-        "Desenvolvido por <b>Davi Xavier</b></p>",
-        unsafe_allow_html=True
-    )
+    if st.button('Consultar'):
+        st.divider()
+        if municipio:
+            st.session_state['municipio'] = municipio
+            st.session_state['estado_selecionado'] = estado_selecionado
 
-    if st.sidebar.button('Análise por Município'):
-        st.session_state['page'] = 'Análise por Município'
-    if st.sidebar.button('Gráfico por Regional'):
-        st.session_state['page'] = 'Gráfico por Regional'
-    if st.sidebar.button('Gráfico de Todo o Estado'):
-        st.session_state['page'] = 'Gráfico de Todo o Estado'
-    if st.sidebar.button('Situação Nacional'):
-        st.session_state['page'] = 'Situação Nacional'
-    if st.sidebar.button('Relatório de E-mails Enviados'):
-        st.session_state['page'] = 'Relatório de E-mails Enviados'
-    fases = df['FASE'].dropna().unique()
-    fases_selecionadas = st.sidebar.multiselect('Selecione as Fases', fases, default=fases)
-    instrumentos = df['TIPO_INSTRUMENTO'].dropna().unique()
-    instrumentos_selecionados = st.sidebar.multiselect('Selecione os Tipos de Instrumentos', instrumentos, default=instrumentos)
-
-    df = df[df['FASE'].isin(fases_selecionadas)]
-    df = df[df['TIPO_INSTRUMENTO'].isin(instrumentos_selecionados)]
-
-    if st.session_state['page'] == 'Análise por Município':
-        criterios = st.sidebar.radio("Critério de Classificação", ('Número de Instrumentos Não Iniciados', 'Nome do Município'))
-        regionais_validas = df['REGIAO'].dropna().unique()
-        regional = st.sidebar.selectbox('Selecione a Regional', regionais_validas)
-        municipios_na_regiao = df[df['REGIAO'] == regional]
-        contagem_nao_iniciados = contar_nao_iniciados(municipios_na_regiao)
-
-        if criterios == 'Nome do Município':
-            contagem_nao_iniciados = contagem_nao_iniciados.sort_values(by='MUNICIPIO')
-        else:
-            contagem_nao_iniciados = contagem_nao_iniciados.sort_values(by='NaoIniciados', ascending=False)
-
-        max_nao_iniciados = contagem_nao_iniciados['NaoIniciados'].max()
-
-        st.subheader('Municípios')
-
-        for index, row in contagem_nao_iniciados.iterrows():
-            municipio = row['MUNICIPIO']
-            nao_iniciados = row['NaoIniciados']
-            col1, col2 = st.columns([1, 5])
-            with col1:
-                email_enviado = st.checkbox("", value=emails_enviados.get(municipio, False), key=municipio)
-                emails_enviados[municipio] = email_enviado
-                                    
-            with col2:
-                barra_colorida = criar_escala_colorida(nao_iniciados, max_nao_iniciados)
-                st.markdown(barra_colorida, unsafe_allow_html=True)
-
-            if st.button(f'{municipio}', key=f'detalhe_{municipio}'):
-                tabela_formatada = gerar_tabela_formatada(df, municipio, regional)
+            with st.spinner('Processando consulta...'):
+                tabela_formatada = gerar_tabela_formatada(df, municipio)
+                time.sleep(2)  # Simula um tempo de processamento
                 if not tabela_formatada.empty:
                     styled_df = tabela_formatada.style.map(highlight_cells)
+                    styled_df2 = tabela_ideal.style.map(highlight_cells)
+                    st.subheader('Como está seu município:')
                     st.dataframe(styled_df)
-                else:
-                    st.warning('Nenhum dado encontrado para o município e regional selecionados.')
+                    st.subheader('Como deveria estar:')
+                    st.dataframe(styled_df2)
+                    
+            # Transcrever a tabela
+            with st.spinner('Analisando a tabela, por favor aguarde...'):
+                def transcrever_tabela(df):
+                    linhas = []
+                    for index, row in df.iterrows():
+                        linha = f"FASE: {row['FASE']}, EXERCICIO: {row['EXERCICIO']}, PMS: {row['PMS']}, PAS: {row['PAS']}, 1º RDQA: {row['1º RDQA']}, 2º RDQA: {row['2º RDQA']}, 3º RDQA: {row['3º RDQA']}, RAG: {row['RAG']}"
+                        linhas.append(linha)
+                    return "\n".join(linhas)
 
-        salvar_estado_emails(emails_enviados)
+                tabela_transcrita = transcrever_tabela(tabela_formatada)
 
-    elif st.session_state['page'] == 'Gráfico por Regional':
-        regional = st.sidebar.selectbox('Selecione a Regional para o Gráfico', df['REGIAO'].unique())
-        max_nao_iniciados = contar_nao_iniciados(df)['NaoIniciados'].max()
-        criar_grafico_completo(df, regional, max_nao_iniciados)
+                prazos_por_fase = calcular_prazos_por_fase(df)
 
-    elif st.session_state['page'] == 'Gráfico de Todo o Estado':
-        criar_grafico_por_regional(df)
+                api_key = "AIzaSyD-b-cTx9wsP8dV00_f-AKOKHCeJBZOQB8"
+                
+                prompt = f"""
+                Analise a tabela de dados fornecida, que mostra a entrega dos seguintes documentos: Plano Municipal de Saúde (PMS), Programação Anual de Saúde (PAS), Relatórios Detalhados do Quadrimestre Anterior (RDQA) e Relatório Anual de Gestão (RAG).
+                Título: Situação do DigiSUS de {municipio}-{estado_selecionado}.
+                A análise deve cobrir os seguintes aspectos:
+                1. Verifique se todos os documentos foram apresentados conforme exigido (estamos em {data_formatada}).
+                2. Avalie a conformidade dos documentos com a Lei nº 8.142/90, a Lei Complementar nº 141/12 e a Portaria de Consolidação nº 1/2017.
+                3. Destaque quaisquer lacunas ou atrasos na apresentação dos documentos. (:red[Destaque de vermelho os pontos mais graves])
+                4. Sugira melhorias para garantir a conformidade e a qualidade dos documentos.
+                Prazos:
+                """
 
-    elif st.session_state['page'] == 'Situação Nacional':
-        st.subheader("Quantidade de Instrumentos Não Iniciados por Estado")
-        df_situacao_estado = contar_nao_iniciados_por_estado()
-        criar_grafico_situacao_por_estado(df_situacao_estado)
+                for _, row in df_prazos.iterrows():
+                    fase = row['Fase']
+                    exercicio = row['Exercício']
+                    if exercicio == 0:
+                        prompt += f"\nFase {fase} - PMS:\n"
+                        prompt += f"- Plano Municipal de Saúde (PMS): prazo até {row['PMS']}. Execução inicia-se em {row['PMS Execução Início']} e finaliza-se em {row['PMS Execução Fim']}.\n"
+                    else:
+                        prompt += f"\nFase {fase} - {exercicio}:\n"
+                        prompt += f"- Relatório Anual de Gestão (RAG): prazo até {row['RAG']}.\n"
+                        prompt += f"- Programação Anual de Saúde (PAS): prazo até {row['PAS']}.\n"
+                        prompt += f"- Relatório Quadrimestral: 1º RDQA: {row['1º RDQA']}, 2º RDQA: {row['2º RDQA']}, 3º RDQA: {row['3º RDQA']}, 4º RDQA: {row['4º RDQA']}.\n"
 
-    elif st.session_state['page'] == 'Relatório de E-mails Enviados':
-        st.subheader("Relatório de Municípios com E-mails Enviados")
-        municipios_com_emails = [municipio for municipio, enviado in emails_enviados.items() if enviado]
-        
-        if municipios_com_emails:
-            df_relatorio = df[df['MUNICIPIO'].isin(municipios_com_emails)]
-            regionais = df_relatorio['REGIAO'].unique()
-            total_geral = 0
-            
-            for regional in regionais:
-                st.markdown(f"### <span style='color:blue'>Regional: {regional}</span>", unsafe_allow_html=True)
-                municipios_na_regiao = df_relatorio[df['REGIAO'] == regional]['MUNICIPIO'].unique()
-                st.markdown(f"<span style='color:green'>{', '.join(municipios_na_regiao)}</span>", unsafe_allow_html=True)
-                total_na_regiao = len(municipios_na_regiao)
-                st.markdown(f"<span style='color:red'>Total de municípios na regional {regional}: {total_na_regiao}</span>", unsafe_allow_html=True)
-                total_geral += total_na_regiao
-            
-            st.markdown(f"## <span style='color:purple'>Total geral de municípios com e-mails enviados: {total_geral}</span>", unsafe_allow_html=True)
-        else:
-            st.warning("Nenhum email enviado ainda.")
+                prompt += f"(estamos em {data_formatada}). Calcule quantos dias do prazo para cada documento. \n"
+                prompt += f"- Quando EXERCÍCIO for 0, comente sobre o PMS, quando o valor for > 0, analise os demais documentos. \n"
+                prompt += f"- Não comente o conteúdo dos documentos, apenas a tempestividade de sua apresentação. \n"
+                prompt += f"- Todo Aprovado está no prazo. \n"
+                prompt += f"- Tudo que for da data atual pra frente está em dia. \n"
+                prompt += f"- Nunca cite o Exercício 0. \n"
+                prompt += f"- Não fale em prazos de entrega. \n"
+                prompt += f"- Não cite datas. \n"
+                prompt += f"- Qualquer situação só é grave com mais de 1 ano de atraso. \n"
+                prompt += f"- Destaque o texto com verde, laranja e vermelho onde aplicável. \n"
+                #prompt += f"- Ao final, confira os prazos novamente. \n"
+                prompt += f"Colored text and background colors for text, using the syntax :color[text to be colored] and :color-background[text to be colored], respectively. color must be replaced with any of the following supported colors: blue, green, orange, red, violet, gray/grey, rainbow. For example, you can use :orange[your text here] or :blue-background[your text here]. \n"
+                
+                
+                # st.write(tabela_transcrita)
+                # st.write(prompt)
+                # st.write(municipio)
+                analise_ia = analisar_dataframe_gemini(tabela_transcrita, api_key, prompt, municipio)
+                st.markdown(analise_ia)
+                    
+                st.subheader('Quem somos?')
+                st.image('robo.png', caption='Estamos comprometidos em impulsionar a gestão da saúde pública municipal ao próximo nível.')
+                texto = """
+                <p style="text-align: justify;">
+                    Somos especializados em consultoria de gestão pública de saúde e ajudamos secretarias municipais a alcançar a excelência em sua gestão, garantindo um sistema de saúde mais eficiente, transparente e humanizado.
+                    <strong>Nossas vantagens incluem:</strong>
+                    <ul>
+                        <li><strong>Eficiência com IA e Automação</strong>: Utilizamos inteligência artificial e automação para analisar dados municipais e elaborar documentos com máxima assertividade e rapidez.</li>
+                        <li><strong>Expertise Técnica</strong>: Nossos técnicos possuem vasta experiência na gestão da saúde, oferecendo soluções de ponta.</li>
+                        <li><strong>Transparência</strong>: Implementamos práticas que asseguram a clareza e a responsabilidade em todas as operações.</li>
+                        <li><strong>Humanização</strong>: Colocamos o cidadão no centro das nossas estratégias, proporcionando um atendimento mais humano e acolhedor.</li>
+                    </ul>
+                    <strong>Seja referência em gestão pública de saúde.</strong>
+                    Conte com a S Consultoria & Assessoria para transformar a realidade da sua secretaria de forma rápida e eficiente.
+                    Juntos, vamos construir um futuro mais saudável para todos.
+                    <br><br>
+                    <strong>Entre em contato agora mesmo clicando no menu acima.</strong>
+                </p>
+                """
+                st.markdown(texto, unsafe_allow_html=True)
 
+# Define the horizontal menu with streamlit_option_menu
+selected_page = option_menu(
+    menu_title=None,   # No title for horizontal layout
+    options=["Consulta", "Contato"],
+    icons=["search", "envelope"],  # Icons for each option
+    menu_icon="cast",  # Icon for the menu (not relevant here)
+    default_index=0,   # Default selection
+    orientation="horizontal"  # Horizontal layout
+)
 
-
-
-if __name__ == '__main__':
+# Display the selected page
+if selected_page == "Contato":
+    if 'municipio' in st.session_state and 'estado_selecionado' in st.session_state:
+        contato()
+    else:
+        st.warning("Por favor, realize a consulta primeiro para definir o município e o estado.")
+else:
     main()
