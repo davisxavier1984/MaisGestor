@@ -516,11 +516,9 @@ if escolha == "V. UPA 24h":
 
 # Página 6: Conclusão
 if escolha == "VI. Conclusão":
-    st.title('Conclusão e Necessidade de Aumento do Teto MAC')
+    st.title('Necessidade de Aumento do Teto MAC')
 
     st.markdown("""
-    ## Conclusão
-
     A análise detalhada dos procedimentos hospitalares e ambulatoriais em Euclides da Cunha, BA, no período de 2010 a 2023, revela uma tendência clara de crescimento na demanda por serviços de saúde. Essa demanda crescente é evidenciada pelo aumento significativo no número de procedimentos de média e alta complexidade, bem como pelos investimentos contínuos em recursos financeiros.
 
     ### Importância de Manter o Nível Atual de Produção
