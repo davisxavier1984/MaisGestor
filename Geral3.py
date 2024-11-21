@@ -55,7 +55,7 @@ total_procedimentos = [
 ]
 
 # Criação do menu de seleção de páginas na barra lateral
-paginas = ["I. Evolução do Teto MAC", "II. MAC x Procedimentos Hospitalares", "III. MAC x Produção Ambulatorial", "IV. Correlação Produção vs Recursos", "V. Conclusão"]
+paginas = ["I. Evolução do Teto MAC", "II. MAC x Procedimentos Hospitalares", "III. MAC x Produção Ambulatorial", "IV. Correlação Produção vs Recursos", "V. UPA 24h", "VI. Conclusão"]
 
 # Adicionando as logos na sidebar
 st.sidebar.image('logo_maisgestor.png')
@@ -81,6 +81,7 @@ if escolha == "I. Evolução do Teto MAC":
     fig.tight_layout()
 
     st.pyplot(fig)
+    st.write('Fonte: Sismac/MS')
     
     st.markdown("""
     **Essa tabela apresenta o histórico do teto MAC (Média e Alta Complexidade) do município de Euclides da Cunha - BA, com variações anuais tanto nos valores sem incentivos quanto nos valores com incentivos. Seguem algumas observações sobre a evolução:**
@@ -144,6 +145,7 @@ if escolha == "II. MAC x Procedimentos Hospitalares":
     
     fig.tight_layout()
     st.pyplot(fig)
+    st.write('Fonte: Tabnet/Datasus/MS')
 
     st.markdown("""
     ### **Análise Geral dos Procedimentos Hospitalares**
@@ -201,6 +203,7 @@ if escolha == "III. MAC x Produção Ambulatorial":
     
     fig.tight_layout()
     st.pyplot(fig)
+    st.write('Fonte: Tabnet/Datasus/MS')
 
     st.markdown("""
     ### **Análise Geral da Produção Ambulatorial**
@@ -397,8 +400,122 @@ if escolha == "IV. Correlação Produção vs Recursos":
     """)
 
 
-# Página 5: Conclusão
-if escolha == "V. Conclusão":
+# Página 5: UPA 24h
+if escolha == "V. UPA 24h":
+    st.title('UPA 24h')
+   
+    # Dados
+    anos = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+    procedimentos = {
+        "Atendimento de Urgência com Observação até 24 horas (0301060029)": [21506, 15310, 13808, 5603, 5305, 9496, 45510, 36148],
+        "Atendimento Médico em Unidade de Pronto Atendimento (0301060096)": [17441, 20023, 34492, 10896, 12288, 40040, 49704, 31809]
+    }
+
+    acolhimento_risco = {
+        "Acolhimento com Classificação de Risco (0301060118)": [18602, 21114, 36012, 12057, 12010, 43581, 53060, 31749]
+    }
+
+    # Calcular a soma dos procedimentos
+    soma_procedimentos = [sum(values) for values in zip(*procedimentos.values())]
+
+    # Meta anual de produção
+    meta_anual = 81000
+
+    # Gráfico para Atendimento de Urgência e Unidade de Pronto Atendimento
+    fig1, ax1 = plt.subplots(figsize=(14, 7))
+    for procedimento, valores in procedimentos.items():
+        ax1.plot(anos, valores, marker='o', label=procedimento)
+    ax1.plot(anos, soma_procedimentos, marker='o', label='Soma dos Procedimentos', linestyle='-', color='purple')
+    ax1.axhline(y=meta_anual, color='r', linestyle='--', label='Meta Anual')
+
+    # Configurações do primeiro gráfico
+    ax1.set_title("Produção Ambulatorial do SUS - Euclides da Cunha (BA) - 2017 a 2024 (Outros Procedimentos)", fontsize=14)
+    ax1.set_xlabel("Ano", fontsize=12)
+    ax1.set_ylabel("Quantidade Aprovada", fontsize=12)
+    ax1.grid(axis='y', linestyle='--', alpha=0.7)
+    ax1.legend(title="Procedimentos", fontsize=10, title_fontsize=11)
+    ax1.set_xticks(range(len(anos)))
+    ax1.set_xticklabels(anos, rotation=45)
+    fig1.tight_layout()
+    st.pyplot(fig1)
+
+    # Gráfico para Acolhimento com Classificação de Risco
+    fig2, ax2 = plt.subplots(figsize=(14, 7))
+    for procedimento, valores in acolhimento_risco.items():
+        ax2.plot(anos, valores, marker='o', label=procedimento)
+    ax2.axhline(y=meta_anual, color='r', linestyle='--', label='Meta Anual')
+
+    # Configurações do segundo gráfico
+    ax2.set_title("Produção Ambulatorial do SUS - Euclides da Cunha (BA) - 2017 a 2024 (Acolhimento com Classificação de Risco)", fontsize=14)
+    ax2.set_xlabel("Ano", fontsize=12)
+    ax2.set_ylabel("Quantidade Aprovada", fontsize=12)
+    ax2.grid(axis='y', linestyle='--', alpha=0.7)
+    ax2.legend(title="Procedimentos", fontsize=10, title_fontsize=11)
+    ax2.set_xticks(range(len(anos)))
+    ax2.set_xticklabels(anos, rotation=45)
+    fig2.tight_layout()
+    st.pyplot(fig2)
+
+    # Texto explicativo
+    st.markdown("""
+    ### Situação da UPA de Euclides da Cunha - BA
+
+    Em 2 de outubro de 2024, a **Portaria GM/MS nº 5.430** reduziu o valor anual do teto MAC de Euclides da Cunha em R$ 900.000,00, rebaixando a habilitação da UPA de V para III. Essa mudança ocorreu porque a unidade não atingiu a produção mínima esperada conforme estipulado pela **Portaria GM/MS nº 10 de 3 de janeiro de 2017**. De acordo com o **Art. 38** dessa portaria, a produção mínima para a UPA 24h, registrada no SIA/SUS, para a Opção V, deve ser de 81.000 atendimentos anuais tanto para atendimentos médicos (códigos: 0301060029, 0301060096) quanto para acolhimento com classificação de risco (código: 0301060118).
+
+    #### Produção Anual dos Procedimentos
+
+    | Ano | Atendimento de Urgência (0301060029) | Atendimento Médico (0301060096) | Total (Urgência + Médico) | Meta Anual (81.000) |
+    | --- | ----------------------------------- | ------------------------------- | ------------------------- | ------------------ |
+    | 2017 | 21.506 | 17.441 | 38.947 | Não atingiu |
+    | 2018 | 15.310 | 20.023 | 35.333 | Não atingiu |
+    | 2019 | 13.808 | 34.492 | 48.300 | Não atingiu |
+    | 2020 | 5.603  | 10.896 | 16.499 | Não atingiu |
+    | 2021 | 5.305  | 12.288 | 17.593 | Não atingiu |
+    | 2022 | 9.496  | 40.040 | 49.536 | Não atingiu |
+    | 2023 | 45.510 | 49.704 | 95.214 | Atingiu |
+    | 2024 | 36.148 | 31.809 | 67.957 | Não atingiu |
+
+    #### Produção Anual de Acolhimento com Classificação de Risco
+
+    | Ano | Produção Anual Real | Meta Anual (81.000) |
+    | --- | ------------------- | ------------------ |
+    | 2017 | 18.602 | Não atingiu |
+    | 2018 | 21.114 | Não atingiu |
+    | 2019 | 36.012 | Não atingiu |
+    | 2020 | 12.057 | Não atingiu |
+    | 2021 | 12.010 | Não atingiu |
+    | 2022 | 43.581 | Não atingiu |
+    | 2023 | 53.060 | Não atingiu |
+    | 2024 | 31.749 | Não atingiu |
+
+    ### Análise Detalhada
+
+    1. **Desempenho Irregular**: A análise dos dados revela um desempenho irregular ao longo dos anos. Exceto em 2023, a soma dos atendimentos de urgência e médicos (códigos: 0301060029 e 0301060096) e o acolhimento com classificação de risco (código: 0301060118) ficou consistentemente abaixo da meta anual de 81.000 atendimentos. 
+
+    2. **Ano de Destaque (2023)**: Em 2023, a soma dos atendimentos de urgência e médicos atingiu 95.214, superando a meta anual. No entanto, essa melhoria não foi suficiente para manter a habilitação V, uma vez que o acolhimento com classificação de risco também precisava atingir a meta, mas ficou em 53.060.
+
+    3. **Impacto da Pandemia**: A queda significativa na produção em 2020 e 2021 pode ser atribuída à pandemia de COVID-19, que afetou a capacidade operacional da unidade.
+
+    #### Recomendações
+
+    Para reaver a habilitação V e garantir o aumento da produção, sugere-se:
+
+    1. **Aumento de Recursos e Profissionais**: Alocar mais profissionais e recursos para atender a demanda e aumentar a capacidade de atendimento da unidade. Isso inclui contratar mais médicos e pessoal de apoio para melhorar a eficiência dos serviços prestados.
+
+    2. **Melhoria na Gestão de Processos**: Implementar melhorias na gestão e eficiência dos processos internos para aumentar o número de atendimentos. Isso pode envolver a adoção de novas tecnologias para gestão de filas e prontuários eletrônicos, além de treinamentos para os funcionários.
+
+    3. **Campanhas de Divulgação**: Realizar campanhas de divulgação para incentivar a população a utilizar os serviços da UPA, garantindo que mais pacientes procurem atendimento. A informação pode ser disseminada através de mídias sociais, rádio local, e parcerias com outras instituições de saúde.
+
+    4. **Monitoramento Contínuo**: Estabelecer um sistema de monitoramento contínuo para acompanhar a produção mensal e tomar ações corretivas rapidamente. Isso ajudará a identificar possíveis problemas e implementar soluções antes que a produção caia significativamente abaixo da meta.
+
+    5. **Planejamento Estratégico**: Desenvolver um plano estratégico focado no aumento da produção para garantir que todas as metas sejam atingidas consistentemente. Este plano deve incluir objetivos claros, prazos definidos, e ações específicas para atingir as metas.
+    """)
+
+
+
+
+# Página 6: Conclusão
+if escolha == "VI. Conclusão":
     st.title('Conclusão e Necessidade de Aumento do Teto MAC')
 
     st.markdown("""
