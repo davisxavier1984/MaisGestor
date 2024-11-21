@@ -1,1 +1,5 @@
+streamlit
+plotly
+matplotlib
+numpy
 plotly.express
