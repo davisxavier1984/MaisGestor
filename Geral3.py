@@ -165,7 +165,7 @@ if escolha == "II. MAC x Procedimentos Hospitalares":
     1. **Crescimento Sustentado de Recursos**: O aumento contínuo do teto total até 2022 sugere uma expansão dos recursos financeiros alocados para a saúde, o que pode ter contribuído para o aumento do número de procedimentos hospitalares, especialmente cirúrgicos.
     2. **Impacto dos Incentivos**: O aumento significativo nos valores com incentivos a partir de 2016 mostra a eficácia das políticas de incentivo na ampliação da capacidade de atendimento hospitalar.
     3. **Estabilidade Relativa dos Valores Sem Incentivo**: A estabilidade dos valores sem incentivo ao longo dos anos reflete uma manutenção do financiamento básico, mesmo com flutuações no cenário econômico.
-    4. **Ajuste em 2023**: A redução nos recursos totais em 2023 pode ser um indicativo de ajustes orçamentários ou mudanças nas políticas de financiamento da saúde.
+    4. **Ajuste em 2023**: A redução nos recursos totais em 2023 se deve ao ajuste da habilitação da UPA, em virtude de problemas na produção.
 
     ### **Destaques Numéricos**
     - **Procedimentos Cirúrgicos**: O aumento substancial de 2016 a 2023 destaca uma melhora significativa na capacidade cirúrgica.
