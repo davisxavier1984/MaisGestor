@@ -55,7 +55,7 @@ total_procedimentos = [
 ]
 
 # Criação do menu de seleção de páginas na barra lateral
-paginas = ["I. Evolução do Teto MAC", "II. MAC x Procedimentos Hospitalares", "III. MAC x Produção Ambulatorial", "IV. Correlação Produção vs Recursos", "V. UPA 24h", "VI. Conclusão"]
+paginas = ["Introdução", "I. Evolução do Teto MAC", "II. MAC x Procedimentos Hospitalares", "III. MAC x Produção Ambulatorial", "IV. Correlação Produção vs Recursos", "V. UPA 24h", "VI. Conclusão"]
 
 # Adicionando as logos na sidebar
 st.sidebar.image('logo_maisgestor.png')
@@ -543,4 +543,38 @@ if escolha == "VI. Conclusão":
     ### Conclusão
 
     A análise dos dados indica uma forte correlação positiva entre o aumento dos recursos financeiros e a melhoria nos serviços de saúde, especialmente nos procedimentos de média e alta complexidade. Para garantir um sistema de saúde sustentável e equitativo, é imperativo que os recursos financeiros continuem a crescer em conformidade com a demanda. Um aumento no teto MAC é não apenas uma necessidade, mas uma responsabilidade para assegurar a saúde e o bem-estar da população de Euclides da Cunha, BA. Investir na saúde é investir no futuro.
+    """)
+
+
+# Página 1: Evolução do Teto MAC
+if escolha == "Introdução":
+    st.title("Introdução")
+    
+    st.markdown("""
+    ## História
+    Os primeiros habitantes da região foram os índios caimbés, da tribo dos Tupiniquins. A cidade foi desbravada por colonos vindos de regiões circunvizinhas, como Monte Santo e Tucano, que se fixaram com suas famílias e dedicaram-se à lavoura e à criação de gado. Em 1933, o território foi emancipado e elevado à categoria de município, sendo nomeado em homenagem ao escritor Euclides da Cunha, autor de "Os Sertões".
+
+    Durante os séculos XIX e XX, Euclides da Cunha participou de importantes movimentos históricos do Brasil, incluindo a Guerra de Canudos, que ocorreu nas proximidades e marcou profundamente a história local.
+
+    ## Demografia
+    Atualmente, Euclides da Cunha possui uma população de aproximadamente 64.547 habitantes, com uma densidade demográfica de 31,8 habitantes por km². A cidade é composta por seis distritos: Aribicé, Caimbé, Ruilândia, Carnaíba, Muriti e Massacará.
+
+    A população de Euclides da Cunha é majoritariamente rural, com muitos habitantes vivendo em pequenas propriedades agrícolas. A cidade tem uma taxa de crescimento populacional moderada e enfrenta desafios típicos de áreas rurais, como a migração de jovens para centros urbanos em busca de melhores oportunidades.
+
+    ## Economia
+    A economia de Euclides da Cunha é fortemente baseada na agricultura e na pecuária, sendo essas atividades as principais fontes de renda da população. Os principais produtos agrícolas incluem feijão, milho, mandioca e frutas diversas. Além disso, a pecuária bovina e caprina é uma importante atividade econômica na região.
+
+    O município possui um Índice de Desenvolvimento Humano Municipal (IDHM) de 0,567, classificado como baixo, refletindo desafios em áreas como educação, saúde e renda. A taxa de mortalidade infantil é de 17,4 óbitos por mil nascidos vivos, e o PIB per capita é de aproximadamente R$ 13.015,70.
+
+    ## Educação e Saúde
+    A cidade conta com um sistema educacional composto por escolas públicas de ensino fundamental e médio, além de algumas instituições de ensino técnico e superior. Apesar dos esforços, a qualidade da educação ainda enfrenta dificuldades, como a falta de recursos e infraestrutura adequada.
+
+    Na área da saúde, Euclides da Cunha dispõe de postos de saúde e um hospital municipal, que atendem às necessidades básicas da população. No entanto, a cidade carece de especialidades médicas e serviços de saúde mais avançados, obrigando muitas vezes os moradores a se deslocarem para municípios vizinhos.
+
+    ## Cultura e Turismo
+    Euclides da Cunha tem uma rica herança cultural, com festas populares, tradições folclóricas e manifestações artísticas que refletem a identidade do sertanejo. A cidade celebra diversas festas ao longo do ano, incluindo a festa do padroeiro, São Sebastião, e eventos culturais como vaquejadas e festivais de música.
+
+    O turismo em Euclides da Cunha é voltado para o ecoturismo e o turismo histórico, com atrações como trilhas ecológicas, paisagens naturais e sítios históricos relacionados à Guerra de Canudos.
+
+    Euclides da Cunha é uma cidade que, apesar de seus desafios, continua a crescer e se desenvolver, mantendo suas raízes culturais e econômicas.
     """)
