@@ -12,3 +12,4 @@ unidecode
 plotly
 numpy
 plotly.express
+locale
