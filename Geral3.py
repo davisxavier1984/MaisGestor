@@ -2,11 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import locale
 import base64
-
-# Configurar o locale para formatação em português do Brasil
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+from babel.numbers import format_currency
 
 # Função para estilizar métricas com IDs únicos
 def style_metric_card(
@@ -82,9 +79,9 @@ dados = {
 df = pd.DataFrame(dados)
 
 # Calcular valores e formatar
-recurso_atual_anual = locale.currency(dados['Teto Total (R$)'][-1], grouping=True, symbol="R$")
-potencial_aumento_anual = locale.currency(1026741.65, grouping=True, symbol="R$")
-soma_total = locale.currency(dados['Teto Total (R$)'][-1] + 1026741.65, grouping=True, symbol="R$")
+recurso_atual_anual = format_currency(dados['Teto Total (R$)'][-1], 'BRL', locale='pt_BR')
+potencial_aumento_anual = format_currency(1026741.65, 'BRL', locale='pt_BR')
+soma_total = format_currency(dados['Teto Total (R$)'][-1] + 1026741.65, 'BRL', locale='pt_BR')
 
 # Função para converter imagem em base64
 def img_to_base64(file_path):
