@@ -13,3 +13,4 @@ plotly
 numpy
 plotly.express
 locale
+pip
