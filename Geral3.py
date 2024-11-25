@@ -234,8 +234,3 @@ expandir e melhorar os serviços de saúde oferecidos à população.
 
 # Fonte dos dados
 st.markdown("Fonte: Sismac/MS")
-
-# Link para mais informações
-st.markdown("""
-Para mais informações, clique [aqui](https://api.whatsapp.com/send?phone=5577997004950&text=Sou%20um%20gestor%20engajado%20e%20gostaria%20de%20saber%20mais%20sobre%20a%20N3).
-""")
