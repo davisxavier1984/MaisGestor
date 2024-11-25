@@ -183,7 +183,7 @@ df.loc[len(df)] = [2025, 7871685.99, 0, 1026741.65]
 
 # Atualizar o gráfico de barras com todas as colunas em azul
 fig2 = go.Figure(data=[
-    go.Bar(name='Teto Total (R$)', x=df['Ano'], y=df['Teto Total (R$)'], marker_color='blue')
+    go.Bar(name='Teto Total (R$)', x=df['Ano'], y=df['Teto Total (R$)'], marker_color='green')
 ])
 
 # Destaque para potencial de aumento entre 2024 e 2025
