@@ -396,7 +396,7 @@ def main():
 
                 prazos_por_fase = calcular_prazos_por_fase(df)
 
-                api_key = "AIzaSyD-b-cTx9wsP8dV00_f-AKOKHCeJBZOQB8"
+                api_key = "AIzaSyCAsdH3sVjucefEudnHnGABAlayMXPE5Wo"
                 
                 prompt = f"""
                 Analise a tabela de dados fornecida, que mostra a entrega dos seguintes documentos: Plano Municipal de Saúde (PMS), Programação Anual de Saúde (PAS), Relatórios Detalhados do Quadrimestre Anterior (RDQA) e Relatório Anual de Gestão (RAG).
