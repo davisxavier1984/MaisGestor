@@ -14,4 +14,3 @@ numpy
 plotly.express
 babel
 groq
-MockGroq
