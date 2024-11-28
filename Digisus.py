@@ -12,6 +12,7 @@ from email.mime.text import MIMEText
 import time
 from streamlit_option_menu import option_menu
 import datetime
+import groq
 
 data_atual = datetime.date.today()
 data_formatada = data_atual.strftime("%d de %B de %Y")
