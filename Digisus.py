@@ -516,7 +516,7 @@ def main():
                     st.image('robo.png', caption='Estamos comprometidos em impulsionar a gestão da saúde pública municipal ao próximo nível.')
                     texto = """
                     <p style="text-align: justify;">
-                        Somos especializados em consultoria de gestão pública de saúde e ajudamos secretarias municipais a alcançar a excelência em sua gestão, garantindo um sistema de saúde mais eficiente, transparente e humanizado.
+                        Somos especializados em gestão pública de saúde e ajudamos secretarias municipais a alcançar a excelência em sua gestão, garantindo um sistema de saúde mais eficiente, transparente e humanizado.
                         <strong>Nossas vantagens incluem:</strong>
                         <ul>
                             <li><strong>Eficiência com IA e Automação</strong>: Utilizamos inteligência artificial e automação para analisar dados municipais e elaborar documentos com máxima assertividade e rapidez.</li>
@@ -525,7 +525,7 @@ def main():
                             <li><strong>Humanização</strong>: Colocamos o cidadão no centro das nossas estratégias, proporcionando um atendimento mais humano e acolhedor.</li>
                         </ul>
                         <strong>Seja referência em gestão pública de saúde.</strong>
-                         Conte com a S Consultoria & Assessoria para transformar a realidade da sua secretaria de forma rápida e eficiente.
+                         Conte com Mais Gestor para transformar a realidade da sua secretaria de forma rápida e eficiente.
                          Juntos, vamos construir um futuro mais saudável para todos.
                         <br><br>
                         <strong>Entre em contato agora mesmo clicando no menu acima.</strong>
