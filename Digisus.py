@@ -67,6 +67,8 @@ def analisar_dataframe_groq(
     """
     Usa a API Groq para analisar um DataFrame de acordo com o prompt fornecido.
     """
+
+    from groq import Groq
     try:
         # Converte o DataFrame para uma string formatada
         df_text = df.to_string(index=False)
