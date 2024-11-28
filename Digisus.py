@@ -13,7 +13,7 @@ import time
 from streamlit_option_menu import option_menu
 import datetime
 import groq
-from dotenv import load_dotenv 
+from dotenv import load_dotenv
 
 # Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -86,6 +86,7 @@ def analisar_dataframe_groq(
         return response_text.strip()
     except Exception as e:
         return f"Erro ao analisar a tabela com Groq: {e}"
+
 
 # Carrega as variáveis de ambiente do arquivo .env 
 
