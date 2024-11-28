@@ -21,11 +21,13 @@ load_dotenv()
 # Acessa a variável de ambiente GROQ_API_KEY
 api_key = os.getenv("Api_key")
 
+
 # Display the logo at the top of the page, centered
-st.image('logo_maisgestor.png')
+st.image('Logo.jpg', width=100)
 
 data_atual = datetime.date.today()
 data_formatada = data_atual.strftime("%d de %B de %Y")
+
 
 hide_st_style = """
             <style>
@@ -38,78 +40,6 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
-from datetime import datetime, timedelta
-
-# Função para calcular os prazos exatos dos documentos
-
-def calcular_prazos_por_fase(fases):
-    dados = []
-
-    # Considera apenas as fases '2018-2021' e '2022-2025'
-    fases_consideradas = ['2018-2021', '2022-2025']
-    
-    for item in fases:
-        fase = item[0]
-        exercicio = item[1]
-        
-        if fase not in fases_consideradas:
-            continue
-        
-        # Define os anos de início e fim da fase
-        fase_inicio_ano, fase_fim_ano = map(int, fase.split('-'))
-        fase_inicio = datetime(fase_inicio_ano, 1, 1)
-        fase_fim = datetime(fase_fim_ano, 1, 1)
-        
-        # Datas para o PMS e execução da fase
-        pms_prazo = fase_inicio if exercicio == 0 else None
-        pms_execucao_inicio = fase_inicio if exercicio == 0 else None
-        pms_execucao_fim = fase_fim if exercicio == 0 else None
-        
-        if exercicio != 0:
-            # Calcula o prazo do RAG para o ano seguinte ao exercício atual
-            rag_prazo = datetime(exercicio + 1, 3, 30)
-            
-            # Define o prazo do PAS para 1º de outubro do ano corrente
-            pas_prazo = datetime(exercicio, 10, 1)
-            
-            # Calcula os prazos dos RDQA nos quadrimestres correspondentes
-            rdqa_prazos = [
-                datetime(exercicio, 6, 2),
-                datetime(exercicio, 9, 1),
-                datetime(exercicio, 12, 1),
-                datetime(exercicio + 1, 3, 3)
-            ]
-            rdqa_prazos = [rdqa.strftime("%d de %B de %Y") for rdqa in rdqa_prazos]
-        else:
-            rag_prazo = None
-            pas_prazo = None
-            rdqa_prazos = [None, None, None, None]
-        
-        dados.append({
-            'Fase': fase,
-            'Exercício': exercicio,
-            'PMS': pms_prazo.strftime("%d de %B de %Y") if pms_prazo else None,
-            'PMS Execução Início': pms_execucao_inicio.strftime("%d de %B de %Y") if pms_execucao_inicio else None,
-            'PMS Execução Fim': pms_execucao_fim.strftime("%d de %B de %Y") if pms_execucao_fim else None,
-            'RAG': rag_prazo.strftime("%d de %B de %Y") if rag_prazo else None,
-            'PAS': pas_prazo.strftime("%d de %B de %Y") if pas_prazo else None,
-            '1º RDQA': rdqa_prazos[0],
-            '2º RDQA': rdqa_prazos[1],
-            '3º RDQA': rdqa_prazos[2],
-            '4º RDQA': rdqa_prazos[3]
-        })
-    
-    df_prazos = pd.DataFrame(dados)
-    return df_prazos
-
-# Exemplo de uso
-fases_dados = [
-    ('2018-2021', 0), ('2018-2021', 2018), ('2018-2021', 2019), ('2018-2021', 2020), ('2018-2021', 2021),
-    ('2022-2025', 0), ('2022-2025', 2022), ('2022-2025', 2023), ('2022-2025', 2024), ('2022-2025', 2025)
-]
-
-df_prazos = calcular_prazos_por_fase(fases_dados)
-
 tabela_ideal_dados = {
     'FASE': ['2018-2021', '2018-2021', '2018-2021', '2018-2021', '2018-2021', '2022-2025', '2022-2025', '2022-2025', '2022-2025', '2022-2025'],
     'EXERCICIO': [0, 2018, 2019, 2020, 2021, 0, 2022, 2023, 2024, 2025],
@@ -121,8 +51,6 @@ tabela_ideal_dados = {
     'RAG': ['', 'Aprovado', 'Aprovado', 'Aprovado', 'Aprovado', '', 'Aprovado', 'Aprovado', 'Não Iniciado', 'Não Iniciado']
 }
 tabela_ideal = pd.DataFrame(tabela_ideal_dados)
-
-
 
 # Função para analisar a tabela usando a API Google Generative AI
 def analisar_dataframe_gemini(df: pd.DataFrame, api_key: str, prompt: str, municipio: str, model: str = 'gemini-1.5-flash', temperature: float = 0.2, stop_sequence: str = '[STOP]') -> str:
@@ -159,7 +87,6 @@ def analisar_dataframe_gemini(df: pd.DataFrame, api_key: str, prompt: str, munic
 
     # Retorna o texto da resposta
     return response.text.strip()
-
 
 # Função para formatar as cores da Tabela
 def highlight_cells(val):
@@ -338,7 +265,7 @@ def contato():
             conteudo = st.text_area("Deixe uma mensagem", placeholder=f'Olá, sou de {municipio}-{estado}, e gostaria de mais informações!')
             submit_button = st.form_submit_button(label='Enviar')
 
-        destinatario_fixo = 'Alyssonmentoria@gmail.com'
+        destinatario_fixo = 'sconsultoria2024@gmail.com'
 
         if submit_button:
             if remetente and assunto and conteudo:
@@ -388,84 +315,70 @@ def main():
                     st.subheader('Como deveria estar:')
                     st.dataframe(styled_df2)
                     
-            # Transcrever a tabela
-            with st.spinner('Analisando a tabela, por favor aguarde...'):
-                def transcrever_tabela(df):
-                    linhas = []
-                    for index, row in df.iterrows():
-                        linha = f"FASE: {row['FASE']}, EXERCICIO: {row['EXERCICIO']}, PMS: {row['PMS']}, PAS: {row['PAS']}, 1º RDQA: {row['1º RDQA']}, 2º RDQA: {row['2º RDQA']}, 3º RDQA: {row['3º RDQA']}, RAG: {row['RAG']}"
-                        linhas.append(linha)
-                    return "\n".join(linhas)
+                    # Transcrever a tabela
+                    def transcrever_tabela(df):
+                        linhas = []
+                        for index, row in df.iterrows():
+                            linha = f"FASE: {row['FASE']}, EXERCICIO: {row['EXERCICIO']}, PMS: {row['PMS']}, PAS: {row['PAS']}, 1º RDQA: {row['1º RDQA']}, 2º RDQA: {row['2º RDQA']}, 3º RDQA: {row['3º RDQA']}, RAG: {row['RAG']}"
+                            linhas.append(linha)
+                        return "\n".join(linhas)
 
-                tabela_transcrita = transcrever_tabela(tabela_formatada)
+                    tabela_transcrita = transcrever_tabela(tabela_formatada)
+                    print(tabela_transcrita)
 
-                prazos_por_fase = calcular_prazos_por_fase(df)
+                    prompt = f"""
+Por favor, analise a tabela de dados fornecida, que mostra a entrega dos seguintes documentos: Plano Municipal de Saúde (PMS), Programação Anual de Saúde (PAS), Relatórios Detalhados do Quadrimestre Anterior (RDQA) e Relatório Anual de Gestão (RAG).
 
-                api_key = "AIzaSyCAsdH3sVjucefEudnHnGABAlayMXPE5Wo"
-                
-                prompt = f"""
-                Analise a tabela de dados fornecida, que mostra a entrega dos seguintes documentos: Plano Municipal de Saúde (PMS), Programação Anual de Saúde (PAS), Relatórios Detalhados do Quadrimestre Anterior (RDQA) e Relatório Anual de Gestão (RAG).
-                Título: Situação do DigiSUS de {municipio}-{estado_selecionado}.
-                A análise deve cobrir os seguintes aspectos:
-                1. Verifique se todos os documentos foram apresentados conforme exigido (estamos em {data_formatada}).
-                2. Avalie a conformidade dos documentos com a Lei nº 8.142/90, a Lei Complementar nº 141/12 e a Portaria de Consolidação nº 1/2017.
-                3. Destaque quaisquer lacunas ou atrasos na apresentação dos documentos. (:red[Destaque de vermelho os pontos mais graves])
-                4. Sugira melhorias para garantir a conformidade e a qualidade dos documentos.
-                Prazos:
-                """
+**Título**: Situação do DigiSUS de {municipio}-{estado_selecionado}.
 
-                for _, row in df_prazos.iterrows():
-                    fase = row['Fase']
-                    exercicio = row['Exercício']
-                    if exercicio == 0:
-                        prompt += f"\nFase {fase} - PMS:\n"
-                        prompt += f"- Plano Municipal de Saúde (PMS): prazo até {row['PMS']}. Execução inicia-se em {row['PMS Execução Início']} e finaliza-se em {row['PMS Execução Fim']}.\n"
-                    else:
-                        prompt += f"\nFase {fase} - {exercicio}:\n"
-                        prompt += f"- Relatório Anual de Gestão (RAG): prazo até {row['RAG']}.\n"
-                        prompt += f"- Programação Anual de Saúde (PAS): prazo até {row['PAS']}.\n"
-                        prompt += f"- Relatório Quadrimestral: 1º RDQA: {row['1º RDQA']}, 2º RDQA: {row['2º RDQA']}, 3º RDQA: {row['3º RDQA']}, 4º RDQA: {row['4º RDQA']}.\n"
+**A análise deve cobrir os seguintes aspectos:**
+1. Verifique se todos os documentos foram apresentados conforme exigido (estamos em {data_formatada}).
+2. Avalie a conformidade dos documentos com a Lei nº 8.142/90, a Lei Complementar nº 141/12 e a Portaria de Consolidação nº 1/2017.
+3. Destaque quaisquer lacunas ou atrasos na apresentação dos documentos. (:red-background[Destaque de vermelho os pontos mais graves])
+4. Sugira melhorias para garantir a conformidade e a qualidade dos documentos.
 
-                prompt += f"(estamos em {data_formatada}). Calcule quantos dias do prazo para cada documento. \n"
-                prompt += f"- Quando EXERCÍCIO for 0, comente sobre o PMS, quando o valor for > 0, analise os demais documentos. \n"
-                prompt += f"- Não comente o conteúdo dos documentos, apenas a tempestividade de sua apresentação. \n"
-                prompt += f"- Todo Aprovado está no prazo. \n"
-                prompt += f"- Tudo que for da data atual pra frente está em dia. \n"
-                prompt += f"- Nunca cite o Exercício 0. \n"
-                prompt += f"- Não fale em prazos de entrega. \n"
-                prompt += f"- Não cite datas. \n"
-                prompt += f"- Qualquer situação só é grave com mais de 1 ano de atraso. \n"
-                prompt += f"- Destaque o texto com verde, laranja e vermelho onde aplicável. \n"
-                #prompt += f"- Ao final, confira os prazos novamente. \n"
-                prompt += f"Colored text and background colors for text, using the syntax :color[text to be colored] and :color-background[text to be colored], respectively. color must be replaced with any of the following supported colors: blue, green, orange, red, violet, gray/grey, rainbow. For example, you can use :orange[your text here] or :blue-background[your text here]. \n"
-                
-                
-                # st.write(tabela_transcrita)
-                # st.write(prompt)
-                # st.write(municipio)
-                analise_ia = analisar_dataframe_gemini(tabela_transcrita, api_key, prompt, municipio)
-                st.markdown(analise_ia)
-                    
-                st.subheader('Quem somos?')
-                st.image('robo.png', caption='Estamos comprometidos em impulsionar a gestão da saúde pública municipal ao próximo nível.')
-                texto = """
-                <p style="text-align: justify;">
-                    Somos especializados em gestão pública de saúde e ajudamos secretarias municipais a alcançar a excelência em sua gestão, garantindo um sistema de saúde mais eficiente, transparente e humanizado.
-                    <strong>Nossas vantagens incluem:</strong>
-                    <ul>
-                        <li><strong>Eficiência com IA e Automação</strong>: Utilizamos inteligência artificial e automação para analisar dados municipais e elaborar documentos com máxima assertividade e rapidez.</li>
-                        <li><strong>Expertise Técnica</strong>: Nossos técnicos possuem vasta experiência na gestão da saúde, oferecendo soluções de ponta.</li>
-                        <li><strong>Transparência</strong>: Implementamos práticas que asseguram a clareza e a responsabilidade em todas as operações.</li>
-                        <li><strong>Humanização</strong>: Colocamos o cidadão no centro das nossas estratégias, proporcionando um atendimento mais humano e acolhedor.</li>
-                    </ul>
-                    <strong>Seja referência em gestão pública de saúde.</strong>
-                    Conte com o Mais Gestor para transformar a realidade da sua secretaria de forma rápida e eficiente.
-                    Juntos, vamos construir um futuro mais saudável para todos.
-                    <br><br>
-                    <strong>Entre em contato agora mesmo clicando no menu acima.</strong>
-                </p>
-                """
-                st.markdown(texto, unsafe_allow_html=True)
+**Prazos:**
+- **Plano Municipal de Saúde (PMS)**: Elaborado no primeiro ano da gestão (FASE) em curso; execução inicia-se no segundo ano e finaliza-se no primeiro ano da gestão subsequente.
+- **Relatório Anual de Gestão (RAG)**: Apresentação até o final do primeiro trimestre do ano seguinte ao período de gestão.
+- **Programação Anual de Saúde (PAS)**: Apresentação até o início do ano fiscal, geralmente até o final de março ou início de abril.
+- **Relatório Quadrimestral**: Apresentação no primeiro mês do quadrimestre subsequente. (1º Quadrimestre: Janeiro a Abril, e assim por diante.)
+
+**Instruções adicionais:**
+- Quando **EXERCÍCIO for 0**, comente sobre o PMS.
+- Quando o valor for **> 0**, analise os demais documentos.
+- Não comente o conteúdo dos documentos, apenas a tempestividade de sua apresentação.
+- Tudo que estiver **Aprovado** está dentro do prazo. PMS aprovado está no prazo.
+- Evite informações repetidas.
+- Revise o texto para evitar erros.
+
+Colored text and background colors for text, using the syntax :color[text to be colored] and :color-background[text to be colored], respectively. color must be replaced with any of the following supported colors: blue, green, orange, red, violet, gray/grey, rainbow. For example, you can use :orange[your text here] or :blue-background[your text here].
+"""
+
+
+                    analise_ia = analisar_dataframe_gemini(tabela_formatada, api_key, prompt, municipio)
+                    st.write(prompt)
+                    st.write(tabela_transcrita)
+                    st.markdown(analise_ia)
+                    st.subheader('Quem somos?')
+                    st.image('robo.png', caption='Estamos comprometidos em impulsionar a gestão da saúde pública municipal ao próximo nível.')
+                    texto = """
+                    <p style="text-align: justify;">
+                        Somos especializados em consultoria de gestão pública de saúde e ajudamos secretarias municipais a alcançar a excelência em sua gestão, garantindo um sistema de saúde mais eficiente, transparente e humanizado.
+                        <strong>Nossas vantagens incluem:</strong>
+                        <ul>
+                            <li><strong>Eficiência com IA e Automação</strong>: Utilizamos inteligência artificial e automação para analisar dados municipais e elaborar documentos com máxima assertividade e rapidez.</li>
+                            <li><strong>Expertise Técnica</strong>: Nossos técnicos possuem vasta experiência na gestão da saúde, oferecendo soluções de ponta.</li>
+                            <li><strong>Transparência</strong>: Implementamos práticas que asseguram a clareza e a responsabilidade em todas as operações.</li>
+                            <li><strong>Humanização</strong>: Colocamos o cidadão no centro das nossas estratégias, proporcionando um atendimento mais humano e acolhedor.</li>
+                        </ul>
+                        <strong>Seja referência em gestão pública de saúde.</strong>
+                         Conte com a S Consultoria & Assessoria para transformar a realidade da sua secretaria de forma rápida e eficiente.
+                         Juntos, vamos construir um futuro mais saudável para todos.
+                        <br><br>
+                        <strong>Entre em contato agora mesmo clicando no menu acima.</strong>
+                    </p>
+                    """
+                    st.markdown(texto, unsafe_allow_html=True)
 
 # Define the horizontal menu with streamlit_option_menu
 selected_page = option_menu(
