@@ -13,6 +13,83 @@ import time
 from streamlit_option_menu import option_menu
 import datetime
 import groq
+from dotenv import load_dotenv 
+
+# Carrega as variáveis de ambiente do arquivo .env
+load_dotenv()
+
+# Classe Mock para Groq caso a importação falhe
+try:
+    from groq import Groq
+except ImportError:
+    class MockGroq:
+        def __init__(self, api_key):
+            self.api_key = api_key
+
+        class chat:
+            @staticmethod
+            def completions():
+                return MockCompletions()
+
+    class MockCompletions:
+        def create(self, **kwargs):
+            # Simula uma resposta
+            return [{"choices": [{"delta": {"content": "Resposta simulada da API Groq."}}]}]
+
+    # Usando mock caso a biblioteca não esteja disponível
+    Groq = MockGroq
+
+# Função para analisar a tabela usando a API Groq
+def analisar_dataframe_groq(
+    df: pd.DataFrame, 
+    prompt: str, 
+    municipio: str, 
+    model: str = 'llama-3.2-90b-vision-preview', 
+    temperature: float = 0, 
+    max_tokens: int = 1024,
+    top_p: float = 1
+) -> str:
+    """
+    Usa a API Groq para analisar um DataFrame de acordo com o prompt fornecido.
+    """
+    try:
+        # Verifica se a chave de API está definida
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            return "Erro: GROQ_API_KEY não está definido no ambiente."
+
+        # Converte o DataFrame para uma string formatada
+        df_text = df.to_string(index=False)
+
+        # Inicializa o cliente Groq
+        client = Groq(api_key=api_key)
+
+        # Cria o prompt completo com a tabela e o nome do município
+        full_prompt = (
+            f"Analise a tabela a seguir: {df_text}\n\n"
+            f"Responda em tópicos, oculte detalhes dos prazos e vá para o resumo: {prompt}"
+        )
+
+        # Executa a geração de conteúdo com o modelo especificado
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": full_prompt}],
+            temperature=temperature,
+            max_tokens=max_tokens,
+            top_p=top_p,
+            stream=True,
+        )
+
+        # Compila a resposta do stream
+        response_text = "".join(chunk.choices[0].delta.content for chunk in completion)
+
+        return response_text.strip()
+    except Exception as e:
+        return f"Erro ao analisar a tabela com Groq: {e}"
+
+# Carrega as variáveis de ambiente do arquivo .env 
+
+load_dotenv()
 
 data_atual = datetime.date.today()
 data_formatada = data_atual.strftime("%d de %B de %Y")
@@ -55,49 +132,6 @@ tabela_ideal_dados = {
 }
 tabela_ideal = pd.DataFrame(tabela_ideal_dados)
 
-def analisar_dataframe_groq(
-    df: pd.DataFrame, 
-    prompt: str, 
-    municipio: str, 
-    model: str = 'llama-3.2-90b-vision-preview', 
-    temperature: float = 0, 
-    max_tokens: int = 1024,
-    top_p: float = 1
-) -> str:
-    """
-    Usa a API Groq para analisar um DataFrame de acordo com o prompt fornecido.
-    """
-
-    from groq import Groq
-    try:
-        # Converte o DataFrame para uma string formatada
-        df_text = df.to_string(index=False)
-
-        # Inicializa o cliente Groq
-        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
-        # Cria o prompt completo com a tabela e o nome do município
-        full_prompt = (
-            f"Analise a tabela a seguir: {df_text}\n\n"
-            f"Responda em tópicos, oculte detalhes dos prazos e vá para o resumo: {prompt}"
-        )
-
-        # Executa a geração de conteúdo com o modelo especificado
-        completion = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": full_prompt}],
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            stream=True,
-        )
-
-        # Compila a resposta do stream
-        response_text = "".join(chunk.choices[0].delta.content for chunk in completion)
-
-        return response_text.strip()
-    except Exception as e:
-        return f"Erro ao analisar a tabela com Groq: {e}"
 
 # Função para formatar as cores da tabela
 def highlight_cells(val):
