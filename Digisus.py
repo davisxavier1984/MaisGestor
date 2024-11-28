@@ -23,8 +23,8 @@ try:
     from groq import Groq
 except ImportError:
     class MockGroq:
-        def __init__(self, api_key):
-            self.api_key = api_key
+        def __init__(self, GROQ_API_KEY):
+            self.api_key = GROQ_API_KEY
 
         class chat:
             @staticmethod
@@ -63,6 +63,8 @@ def analisar_dataframe_groq(
 
         # Inicializa o cliente Groq
         client = Groq(api_key=api_key)
+        client = Groq(api_key=api_key)
+
 
         # Cria o prompt completo com a tabela e o nome do município
         full_prompt = (
