@@ -125,7 +125,7 @@ tabela_ideal = pd.DataFrame(tabela_ideal_dados)
 
 
 # Função para analisar a tabela usando a API Google Generative AI
-def analisar_dataframe_gemini(df: pd.DataFrame, api_key: str, prompt: str, municipio: str, model: str = 'gemini-1.5-flash', temperature: float = 0, stop_sequence: str = '17') -> str:
+def analisar_dataframe_gemini(df: pd.DataFrame, api_key: str, prompt: str, municipio: str, model: str = 'gemini-1.5-flash', temperature: float = 0.2, stop_sequence: str = '[STOP]') -> str:
     """
     Usa a API Google Generative AI para analisar um DataFrame de acordo com o prompt fornecido.
 
@@ -135,8 +135,8 @@ def analisar_dataframe_gemini(df: pd.DataFrame, api_key: str, prompt: str, munic
     prompt (str): O prompt de análise que orienta o modelo.
     municipio (str): Nome do município a ser incluído na análise.
     model (str): Modelo do Google Generative AI a ser usado (default: 'gemini-1.5-flash').
-    temperature (float): Controla a criatividade e variabilidade das respostas (default: 0.7).
-    stop_sequence (str): Sequência de parada para a geração de conteúdo (default: '\n').
+    temperature (float): Controla a criatividade e variabilidade das respostas (default: 0.2).
+    stop_sequence (str): Sequência de parada para a geração de conteúdo (default: '[STOP]').
 
     Retorna:
     str: Análise gerada pelo modelo Google Generative AI.
@@ -145,11 +145,11 @@ def analisar_dataframe_gemini(df: pd.DataFrame, api_key: str, prompt: str, munic
     genai.configure(api_key=api_key)
 
     # Converte o DataFrame para uma string formatada
-    df_text = df.to_string(index=False) if isinstance(df, pd.DataFrame) else df
+    df_text = df.to_string(index=False)
 
     # Cria o prompt completo com a tabela e o nome do município
     full_prompt = f"{prompt}\n\nAqui está a tabela de dados para o município de {municipio}:\n\n{df_text}"
-    
+
     # Configura o modelo e a geração de conteúdo
     config = genai.GenerationConfig(temperature=temperature, stop_sequences=[stop_sequence])
     model = genai.GenerativeModel(model, system_instruction=None)
@@ -157,10 +157,8 @@ def analisar_dataframe_gemini(df: pd.DataFrame, api_key: str, prompt: str, munic
     # Executa a geração de conteúdo com o modelo especificado
     response = model.generate_content(contents=[full_prompt], generation_config=config)
 
-    # Retorna o texto da resposta ou uma mensagem de erro em branco
-    return response.text.strip() if response and response.text.strip() else "Nenhum resultado gerado. Por favor, verifique o prompt e tente novamente."
-
-
+    # Retorna o texto da resposta
+    return response.text.strip()
 
 
 # Função para formatar as cores da Tabela
