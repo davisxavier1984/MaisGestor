@@ -54,7 +54,6 @@ tabela_ideal_dados = {
 }
 tabela_ideal = pd.DataFrame(tabela_ideal_dados)
 
-# Função para analisar a tabela usando a API Groq
 def analisar_dataframe_groq(
     df: pd.DataFrame, 
     prompt: str, 
@@ -72,12 +71,13 @@ def analisar_dataframe_groq(
         df_text = df.to_string(index=False)
 
         # Inicializa o cliente Groq
-        client = Groq(api_key=api_key)
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
         # Cria o prompt completo com a tabela e o nome do município
-        #full_prompt = f"{prompt}\n\nAqui está a tabela de dados para o município de {municipio}:\n\n{df_text}"
-
-        full_prompt = f'Analise a tabela: {df_text}, responda em tópicos, oculte detalhes dos prazos, vá para o resumo: {prompt}'
+        full_prompt = (
+            f"Analise a tabela a seguir: {df_text}\n\n"
+            f"Responda em tópicos, oculte detalhes dos prazos e vá para o resumo: {prompt}"
+        )
 
         # Executa a geração de conteúdo com o modelo especificado
         completion = client.chat.completions.create(
@@ -90,14 +90,11 @@ def analisar_dataframe_groq(
         )
 
         # Compila a resposta do stream
-        response_text = ""
-        for chunk in completion:
-            response_text += chunk.choices[0].delta.content or ""
+        response_text = "".join(chunk.choices[0].delta.content for chunk in completion)
 
         return response_text.strip()
     except Exception as e:
-        st.error(f"Erro ao processar análise com Groq: {e}")
-        return "Erro ao analisar a tabela."
+        return f"Erro ao analisar a tabela com Groq: {e}"
 
 # Função para formatar as cores da tabela
 def highlight_cells(val):
