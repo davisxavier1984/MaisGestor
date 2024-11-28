@@ -39,7 +39,7 @@ except ImportError:
 
 # Configurações globais
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
-api_key = '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'
+api_key = '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'
 
 # Exibir o logotipo no topo da página, centralizado
 if os.path.exists('logo_maisgestor.png'):
