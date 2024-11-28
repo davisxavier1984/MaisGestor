@@ -459,8 +459,8 @@ def main():
 
                 if not tabela_formatada.empty:
                     # Exibir tabelas formatadas
-                    styled_df = tabela_formatada.style.applymap(highlight_cells)
-                    styled_df2 = tabela_ideal.style.applymap(highlight_cells)
+                    styled_df = tabela_formatada.style.map(highlight_cells)
+                    styled_df2 = tabela_ideal.style.map(highlight_cells)
 
                     st.subheader('Como está seu município:')
                     st.dataframe(styled_df)
