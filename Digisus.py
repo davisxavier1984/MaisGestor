@@ -16,26 +16,6 @@ import datetime
 data_atual = datetime.date.today()
 data_formatada = data_atual.strftime("%d de %B de %Y")
 
-# Verificar se a biblioteca Groq está disponível
-try:
-    from groq import Groq
-except ImportError:
-    class MockGroq:
-        def __init__(self, api_key):
-            self.api_key = api_key
-
-        class chat:
-            @staticmethod
-            def completions():
-                return MockCompletions()
-
-    class MockCompletions:
-        def create(self, **kwargs):
-            # Simula uma resposta
-            return [{"choices": [{"delta": {"content": "Resposta simulada da API Groq."}}]}]
-
-    # Usando mock caso a biblioteca não esteja disponível
-    Groq = MockGroq
 
 # Configurações globais
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
