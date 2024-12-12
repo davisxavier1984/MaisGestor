@@ -442,8 +442,6 @@ if escolha == "V. UPA 24h":
 
 
 
-
-
     # Dados
     anos = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"]
     procedimentos = {
@@ -452,8 +450,16 @@ if escolha == "V. UPA 24h":
         "Atendimento Médico em Unidade de Pronto Atendimento (0301060096)": [38064, 58784, 35268, 38602, 39990, 32840, 8055],
         "Acolhimento com Classificação de Risco (0301060118)": [74541, 69860, 41743, 32618, 32391, 27346, 4854]
     }
+
+    # Calcular a soma dos três primeiros procedimentos
+    soma_procedimentos = [sum(values) for values in zip(
+        procedimentos["Atendimento de Urgência com Observação até 24 horas (0301060029)"],
+        procedimentos["Atendimento de Urgência em Atenção Especializada (0301060061)"],
+        procedimentos["Atendimento Médico em Unidade de Pronto Atendimento (0301060096)"]
+    )]
+
     # Meta anual de produção
-    meta_anual = 121500
+    meta_anual = 81000
 
     # Gráfico para Atendimento de Urgência e Unidade de Pronto Atendimento
     fig1 = go.Figure()
@@ -462,7 +468,6 @@ if escolha == "V. UPA 24h":
 
     fig1.add_shape(type="line", x0=anos[0], y0=meta_anual, x1=anos[-1], y1=meta_anual, line=dict(color="red", width=2, dash="dash"), name='Meta Anual')
 
-    
     fig1.update_layout(title="PRODUÇÃO DA UNIDADE DE PRONTO ATENDIMENTO DR ANTONIO JORGE ABIB NETTO",
                     xaxis_title="Ano", yaxis_title="Quantidade Aprovada",
                     legend_title="Procedimentos", legend=dict(y=-1, x=0),
@@ -487,7 +492,19 @@ if escolha == "V. UPA 24h":
     st.plotly_chart(fig2)
     st.caption('Fonte: TABWIN/MS')
 
+    # Gráfico para Soma dos Três Primeiros Procedimentos
+    fig3 = go.Figure()
+    fig3.add_trace(go.Scatter(x=anos, y=soma_procedimentos, mode='lines+markers', name="Soma dos Três Primeiros Procedimentos"))
 
+    fig3.add_shape(type="line", x0=anos[0], y0=meta_anual, x1=anos[-1], y1=meta_anual, line=dict(color="red", width=2, dash="dash"), name='Meta Anual')
+
+    fig3.update_layout(title="Soma dos Três Primeiros Procedimentos",
+                    xaxis_title="Ano", yaxis_title="Quantidade Aprovada",
+                    legend_title="Procedimentos", legend=dict(y=-1, x=0),
+                    xaxis=dict(tickmode='linear'), yaxis=dict(showgrid=True))
+
+    st.plotly_chart(fig3)
+    st.caption('Fonte: TABWIN/MS')
 
 
 
@@ -590,32 +607,20 @@ if escolha == "VI. Conclusão":
 # Página 1: Evolução do Teto MAC
 if escolha == "Introdução":
     st.title("Introdução")
-    
+    st.image('cidade.jpg')
     st.markdown("""
     ## História
-    Os primeiros habitantes da região foram os índios caimbés, da tribo dos Tupiniquins. A cidade foi desbravada por colonos vindos de regiões circunvizinhas, como Monte Santo e Tucano, que se fixaram com suas famílias e dedicaram-se à lavoura e à criação de gado. Em 1933, o território foi emancipado e elevado à categoria de município, sendo nomeado em homenagem ao escritor Euclides da Cunha, autor de "Os Sertões".
-
-    Durante os séculos XIX e XX, Euclides da Cunha participou de importantes movimentos históricos do Brasil, incluindo a Guerra de Canudos, que ocorreu nas proximidades e marcou profundamente a história local.
+    **Cachoeiro de Itapemirim**, localizada no sul do estado do Espírito Santo, foi fundada oficialmente em **1812**. A cidade se desenvolveu ao longo do século XIX, impulsionada pela **cultura cafeeira** e pelo **garimpo de ouro**. O nome da cidade vem das cachoeiras do rio Itapemirim, que corta a cidade. A chegada da **ferrovia** e da **luz elétrica** marcou o progresso da cidade.
 
     ## Demografia
-    Atualmente, Euclides da Cunha possui uma população de aproximadamente 64.547 habitantes, com uma densidade demográfica de 31,8 habitantes por km². A cidade é composta por seis distritos: Aribicé, Caimbé, Ruilândia, Carnaíba, Muriti e Massacará.
-
-    A população de Euclides da Cunha é majoritariamente rural, com muitos habitantes vivendo em pequenas propriedades agrícolas. A cidade tem uma taxa de crescimento populacional moderada e enfrenta desafios típicos de áreas rurais, como a migração de jovens para centros urbanos em busca de melhores oportunidades.
+    Atualmente, Cachoeiro de Itapemirim possui uma população de aproximadamente **185.784 habitantes**. A cidade é composta por **11 distritos**: Burarama, Conduru, Córrego dos Monos, Coutinho, Gironda, Gruta, Itaoca, Pacotuba, São Vicente, Vargem Grande do Soturno e a sede.
 
     ## Economia
-    A economia de Euclides da Cunha é fortemente baseada na agricultura e na pecuária, sendo essas atividades as principais fontes de renda da população. Os principais produtos agrícolas incluem feijão, milho, mandioca e frutas diversas. Além disso, a pecuária bovina e caprina é uma importante atividade econômica na região.
-
-    O município possui um Índice de Desenvolvimento Humano Municipal (IDHM) de 0,567, classificado como baixo, refletindo desafios em áreas como educação, saúde e renda. A taxa de mortalidade infantil é de 17,4 óbitos por mil nascidos vivos, e o PIB per capita é de aproximadamente R$ 13.015,70.
+    A economia da cidade é diversificada, com destaque para a **agricultura**, **pecuária** e **indústria**. O município possui um Índice de Desenvolvimento Humano Municipal (IDHM) de **0,746**, classificado como alto. O PIB per capita é de aproximadamente **R$ 23.331,02**.
 
     ## Educação e Saúde
-    A cidade conta com um sistema educacional composto por escolas públicas de ensino fundamental e médio, além de algumas instituições de ensino técnico e superior. Apesar dos esforços, a qualidade da educação ainda enfrenta dificuldades, como a falta de recursos e infraestrutura adequada.
-
-    Na área da saúde, Euclides da Cunha dispõe de postos de saúde e um hospital municipal, que atendem às necessidades básicas da população. No entanto, a cidade carece de especialidades médicas e serviços de saúde mais avançados, obrigando muitas vezes os moradores a se deslocarem para municípios vizinhos.
+    Cachoeiro de Itapemirim conta com um sistema educacional que inclui **escolas públicas** de ensino fundamental e médio, além de instituições de **ensino técnico e superior**. Na área da saúde, a cidade dispõe de **postos de saúde** e um **hospital municipal**, atendendo às necessidades básicas da população.
 
     ## Cultura e Turismo
-    Euclides da Cunha tem uma rica herança cultural, com festas populares, tradições folclóricas e manifestações artísticas que refletem a identidade do sertanejo. A cidade celebra diversas festas ao longo do ano, incluindo a festa do padroeiro, São Sebastião, e eventos culturais como vaquejadas e festivais de música.
-
-    O turismo em Euclides da Cunha é voltado para o ecoturismo e o turismo histórico, com atrações como trilhas ecológicas, paisagens naturais e sítios históricos relacionados à Guerra de Canudos.
-
-    Euclides da Cunha é uma cidade que, apesar de seus desafios, continua a crescer e se desenvolver, mantendo suas raízes culturais e econômicas.
+    A cidade é conhecida nacionalmente pela música "**Meu Pequeno Cachoeiro**", composta por Raul Sampaio e cantada por Roberto Carlos, nascido na cidade. O turismo em Cachoeiro de Itapemirim é voltado para o **ecoturismo** e o **turismo histórico**, com atrações como trilhas ecológicas e sítios históricos.
     """)
