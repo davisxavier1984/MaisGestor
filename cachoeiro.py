@@ -47,6 +47,7 @@ paginas = ["Introdução", "I. Evolução do Teto MAC", "II. MAC x Procedimentos
 # Adicionando as logos na sidebar
 st.sidebar.image('logo_maisgestor.png')
 st.sidebar.image('logo.png')
+st.sidebar.markdown("<h1 style='text-align: center; color: #808080;'>Análise do Teto MAC</h1>", unsafe_allow_html=True)
 escolha = st.sidebar.radio("Escolha a página que deseja visualizar:", paginas)
 
 # Página 2: Evolução do Teto MAC
@@ -127,7 +128,8 @@ if escolha == "II. MAC x Procedimentos Hospitalares":
         title='Procedimentos Hospitalares ao Longo dos Anos',
         xaxis_title='Anos',
         yaxis_title='Número de Procedimentos',
-        legend_title='Tipo de Procedimento'
+        legend_title='Tipo de Procedimento',
+        legend=dict(orientation='h', y=-0.2, x=0)
     )
 
 
@@ -142,7 +144,8 @@ if escolha == "II. MAC x Procedimentos Hospitalares":
         title='Recursos ao Longo dos Anos',
         xaxis_title='Anos',
         yaxis_title='Valores (R$)',
-        legend_title='Tipo de Recurso'
+        legend_title='Tipo de Recurso',
+        legend=dict(orientation='h', y=-0.2, x=0)
     )
 
     # Exibir os gráficos no Streamlit
@@ -197,7 +200,9 @@ if escolha == "III. MAC x Produção Ambulatorial":
         title='Produção Ambulatorial ao Longo dos Anos',
         xaxis_title='Anos',
         yaxis_title='Quantidade de Procedimentos',
-        legend_title='Tipo de Procedimento'
+        legend_title='Tipo de Procedimento',
+        legend=dict(orientation='h', y=-0.2, x=0)
+
     )
 
     fig2 = go.Figure()
@@ -211,7 +216,9 @@ if escolha == "III. MAC x Produção Ambulatorial":
         title='Recursos ao Longo dos Anos',
         xaxis_title='Anos',
         yaxis_title='Valores (R$)',
-        legend_title='Tipo de Recurso'
+        legend_title='Tipo de Recurso',
+        legend=dict(orientation='h', y=-0.2, x=0)
+
     )
 
     # Exibir os gráficos no Streamlit
@@ -544,17 +551,17 @@ if escolha == "Introdução":
     st.image('cidade.jpg')
     st.markdown("""
     ## História
-    **Cachoeiro de Itapemirim**, localizada no sul do estado do Espírito Santo, foi fundada oficialmente em **1812**. A cidade se desenvolveu ao longo do século XIX, impulsionada pela **cultura cafeeira** e pelo **garimpo de ouro**. O nome da cidade vem das cachoeiras do rio Itapemirim, que corta a cidade. A chegada da **ferrovia** e da **luz elétrica** marcou o progresso da cidade.
+    **Cachoeiro de Itapemirim**, localizada no sul do estado do Espírito Santo, foi fundada oficialmente em **1812**. Desde seus primórdios, a cidade destacou-se pela **cultura cafeeira**, que impulsionou sua economia durante o século XIX. O **garimpo de ouro** também contribuiu significativamente para o desenvolvimento inicial da cidade. O nome "Cachoeiro de Itapemirim" deriva das imponentes cachoeiras do rio Itapemirim, que corta a cidade e proporciona uma paisagem natural deslumbrante. A chegada da **ferrovia** e da **energia elétrica** no final do século XIX e início do século XX marcou um período de grande progresso e modernização para a cidade, facilitando o transporte e estimulando a industrialização.
 
     ## Demografia
-    Atualmente, Cachoeiro de Itapemirim possui uma população de aproximadamente **185.784 habitantes**. A cidade é composta por **11 distritos**: Burarama, Conduru, Córrego dos Monos, Coutinho, Gironda, Gruta, Itaoca, Pacotuba, São Vicente, Vargem Grande do Soturno e a sede.
+    Atualmente, Cachoeiro de Itapemirim possui uma população de aproximadamente **185.784 habitantes**. A cidade é composta por **11 distritos**, cada um com suas características únicas: Burarama, Conduru, Córrego dos Monos, Coutinho, Gironda, Gruta, Itaoca, Pacotuba, São Vicente, Vargem Grande do Soturno e a sede. Esses distritos são formados por comunidades diversificadas que contribuem para a rica tapeçaria cultural e social do município. A cidade tem uma densidade demográfica que reflete tanto áreas urbanas densamente povoadas quanto zonas rurais com extensas áreas verdes.
 
     ## Economia
-    A economia da cidade é diversificada, com destaque para a **agricultura**, **pecuária** e **indústria**. O município possui um Índice de Desenvolvimento Humano Municipal (IDHM) de **0,746**, classificado como alto. O PIB per capita é de aproximadamente **R$ 23.331,02**.
+    A economia de Cachoeiro de Itapemirim é diversificada, com fortes setores de **agricultura**, **pecuária** e **indústria**. A agricultura, especialmente a produção de café e pedra ornamental, continua a ser um pilar econômico vital. A pecuária complementa a produção agrícola com a criação de gado leiteiro e de corte. A cidade também é conhecida como um dos maiores polos de extração e beneficiamento de mármore e granito do país, o que lhe confere o título de "Capital Secreta do Mármore e Granito". O município possui um Índice de Desenvolvimento Humano Municipal (IDHM) de **0,746**, classificado como alto, e um PIB per capita de aproximadamente **R$ 23.331,02**, indicadores que refletem uma economia robusta e diversificada.
 
     ## Educação e Saúde
-    Cachoeiro de Itapemirim conta com um sistema educacional que inclui **escolas públicas** de ensino fundamental e médio, além de instituições de **ensino técnico e superior**. Na área da saúde, a cidade dispõe de **postos de saúde** e um **hospital municipal**, atendendo às necessidades básicas da população.
+    Cachoeiro de Itapemirim dispõe de um sistema educacional abrangente que inclui **escolas públicas** de ensino fundamental e médio, além de várias instituições de **ensino técnico e superior**. As escolas públicas são complementadas por uma rede de escolas particulares que oferecem alternativas de alta qualidade. Na área de saúde, a cidade é bem servida por diversos **postos de saúde** e um **hospital municipal**, que atendem às necessidades básicas da população. Além disso, existem clínicas especializadas, laboratórios e serviços de pronto atendimento, como a UPA 24h, que garantem uma cobertura de saúde ampla e eficiente para os moradores.
 
     ## Cultura e Turismo
-    A cidade é conhecida nacionalmente pela música "**Meu Pequeno Cachoeiro**", composta por Raul Sampaio e cantada por Roberto Carlos, nascido na cidade. O turismo em Cachoeiro de Itapemirim é voltado para o **ecoturismo** e o **turismo histórico**, com atrações como trilhas ecológicas e sítios históricos.
+    Cachoeiro de Itapemirim é famosa pela música "**Meu Pequeno Cachoeiro**", composta por Raul Sampaio e imortalizada por Roberto Carlos, que nasceu na cidade. Este vínculo cultural forte é celebrado anualmente com eventos e festivais. O turismo na cidade é focado no **ecoturismo** e no **turismo histórico**, aproveitando suas belezas naturais e seu rico patrimônio histórico. Trilhas ecológicas, cachoeiras e sítios históricos atraem visitantes que buscam contato com a natureza e a história local. Além disso, o Parque Natural Municipal do Itabira, com sua geologia singular e biodiversidade, é um ponto turístico de destaque.
     """)
