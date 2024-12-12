@@ -452,18 +452,20 @@ if escolha == "V. UPA 24h":
    
     # Dados
     anos = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+
     procedimentos = {
-        "Atendimento de Urgência com Observação até 24 horas (0301060029)": [6036, 10205, 5682, 5129, 4803, 1990, 2],
-        "Atendimento de Urgência em Atenção Especializada (0301060061)": [8, 10, 18, 12, 16, 2, 1],
-        "Atendimento Médico em Unidade de Pronto Atendimento (0301060096)": [38064, 58784, 35268, 38602, 39990, 32840, 8055],
-        "Acolhimento com Classificação de Risco (0301060118)": [74541, 69860, 41743, 32618, 32391, 27346, 4854]
+        "0301060029 Atendimento de Urgência com Observação até 24 horas em Atenção Especializada": [6036, 10205, 5682, 5129, 4803, 1990, 2],
+        "0301060096 Atendimento Médico em Unidade de Pronto Atendimento": [38064, 58784, 35268, 38602, 39990, 32840, 8055],
+        "0301060100 Atendimento Ortopédico com Imobilização Provisória": [0, 0, 0, 0, 0, 0, 0],
+        "0301060118 Acolhimento com Classificação de Risco": [74541, 69860, 41743, 32618, 32391, 27346, 4854]
     }
+
 
     # Calcular a soma dos três primeiros procedimentos
     soma_procedimentos = [sum(values) for values in zip(
-        procedimentos["Atendimento de Urgência com Observação até 24 horas (0301060029)"],
-        procedimentos["Atendimento de Urgência em Atenção Especializada (0301060061)"],
-        procedimentos["Atendimento Médico em Unidade de Pronto Atendimento (0301060096)"]
+        procedimentos["0301060029 Atendimento de Urgência com Observação até 24 horas em Atenção Especializada"],
+        procedimentos["0301060096 Atendimento Médico em Unidade de Pronto Atendimento"],
+        procedimentos["0301060100 Atendimento Ortopédico com Imobilização Provisória"]
     )]
 
     # Meta anual de produção
