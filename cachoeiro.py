@@ -35,9 +35,9 @@ valores_incentivos = [207900, 476100, 787560, 1134360, 1141860, 1237560, 1771810
 total_ambulatorial = [sum(x) for x in zip(media_complexidade, alta_complexidade, nao_se_aplica)]
 total_procedimentos = [x + y + z + w for x, y, z, w in zip(procedimentos_diagnostica, procedimentos_clinicos, procedimentos_cirurgicos, transplantes_orgaos)]
 
-teto_total = [354781.35, 769862.65, 1678688.29, 1177606.4, 1266711.12, 1245742.66, 2141606.39, 4097172.81, 4520008.24, 4521747.84, 4110800.75, 6423457.12, 7757060.79]
+teto_total = [354781.35, 769862.65, 1678688.29, 1177606.4, 1266711.12, 1245742.66, 2141606.39, 4097172.81, 4520008.24, 4521747.84, 4110800.75, 6423457.12, 12370666.44]
 
-valores_sem_incentivo = [146881.35, 293762.65, 891128.29, 43246.4, 124851.12, 8182.66, 369796.39, 2059812.81, 2482648.24, 2484387.84, 2073440.75, 4353745.12, 5687348.79] # Mantém o valor de 2023
+valores_sem_incentivo = [146881.35, 293762.65, 891128.29, 43246.4, 124851.12, 8182.66, 369796.39, 2059812.81, 2482648.24, 2484387.84, 2073440.75, 4353745.12, 10300954.44] # Mantém o valor de 2023
 
 valores_incentivos = [207900, 476100, 787560, 1134360, 1141860, 1237560, 1771810, 2037360, 2037360, 2037360, 2037360, 2069712, 2069712]
 
@@ -81,31 +81,33 @@ if escolha == "I. Evolução do Teto MAC":
 
     st.plotly_chart(fig)
     st.caption('Fonte: Sismac/MS')
-
     st.markdown("""
-    ### Análise da Evolução do Teto MAC em Cachoeiro de Itapemirim
+        ### Análise da Evolução do Teto MAC em Cachoeiro de Itapemirim
 
-    1. **Crescimento ao Longo dos Anos (2012-2024)**:
-                
-    - O Teto MAC aumentou de 354.781,35 em 2012 para 7.757.060,79 em 2024.
-    - Esse crescimento não foi constante, refletindo a complexidade da gestão de recursos e as políticas públicas.
+        1. **Crescimento ao Longo dos Anos (2012-2024)**:
+        - O Teto MAC aumentou de 354.781,35 em 2012 para R$ 12.370.666,44 em 2024.
+        - Esse crescimento não foi constante, refletindo a complexidade da gestão de recursos e as políticas públicas.
+        - **Dados do Gráfico**: O gráfico mostra um aumento significativo no Teto Total e nos Valores Sem Incentivo a partir de 2022, com um pico acentuado em 2024.
 
-    2. **Contribuição dos Incentivos**:
-    - Incentivos como "CEREST" e "CAPS" foram cruciais para o aumento do Teto MAC, especialmente nos anos iniciais.
-    - A partir de 2018, os incentivos se estabilizaram em torno de R$ 2 milhões, sugerindo uma política de financiamento mais estável.
+        2. **Contribuição dos Incentivos**:
+        - Incentivos como "CEREST" e "CAPS" foram cruciais para o aumento do Teto MAC, especialmente nos anos iniciais.
+        - A partir de 2018, os incentivos se estabilizaram em torno de R$ 2 milhões, sugerindo uma política de financiamento mais estável.
+        - **Dados do Gráfico**: Os Valores Incentivos permaneceram relativamente estáveis ao longo dos anos.
 
-    3. **Variações nos Valores Sem Incentivo**:
-    - As mudanças nos valores "Sem Incentivo" se devem a remanejamentos intra, ou seja, realocações de recursos financeiros dentro do próprio teto MAC, realizadas pela Comissão Intergestores Bipartite (CIB).
-    - Essas variações mostram que os recursos base passaram por muitas realocações e ajustes internos significativos.
+        3. **Variações nos Valores Sem Incentivo**:
+        - As mudanças nos valores "Sem Incentivo" se devem a remanejamentos intra, ou seja, realocações de recursos financeiros dentro do próprio teto MAC, realizadas pela Comissão Intergestores Bipartite (CIB).
+        - Essas variações mostram que os recursos base passaram por muitas realocações e ajustes internos significativos.
+        - **Dados do Gráfico**: Os Valores Sem Incentivo aumentaram significativamente a partir de 2022.
 
-    4. **Impacto das Portarias**:
-    - Em 2023, houve uma redução significativa de R$ 2.266.907,47 no Teto MAC.
-    - Em 2024, essa redução foi compensada com um aumento para R$ 7.757.060,79, indicando ajustes frequentes nos recursos.
+        4. **Impacto das Portarias**:
+        - Em 2023, houve uma redução significativa de R$ 2.266.907,47 no Teto MAC.
+        - Em 2024, essa redução foi compensada com um aumento para R$ 12.370.666,44, indicando ajustes frequentes nos recursos.
+        - **Dados do Gráfico**: O Teto Total e os Valores Sem Incentivo atingiram seu pico em 2024.
 
-    ### Direcionamento para 2025
-    - **Aprimorar a Captação de Incentivos**: Continuar explorando e captando incentivos específicos, como os de programas de saúde, pode ser uma estratégia eficaz. Identificar novas oportunidades de incentivo pode contribuir significativamente para o aumento do Teto MAC.
-    - **Gestão Eficiente dos Recursos**: Revisar e ajustar continuamente os remanejamentos intra para garantir que os recursos estejam sendo utilizados de forma eficiente. Uma gestão dinâmica e transparente pode otimizar a alocação de recursos e justificar aumentos futuros.
-    - **Monitoramento das Políticas Públicas**: Acompanhar de perto as políticas públicas e as portarias que influenciam a alocação de recursos pode ajudar a antecipar mudanças e ajustar as estratégias de financiamento conforme necessário.
+        ### Direcionamento para 2025
+        - **Aprimorar a Captação de Incentivos**: Continuar explorando e captando incentivos específicos, como os de programas de saúde, pode ser uma estratégia eficaz. Identificar novas oportunidades de incentivo pode contribuir significativamente para o aumento do Teto MAC.
+        - **Gestão Eficiente dos Recursos**: Revisar e ajustar continuamente os remanejamentos intra para garantir que os recursos estejam sendo utilizados de forma eficiente. Uma gestão dinâmica e transparente pode otimizar a alocação de recursos e justificar aumentos futuros.
+        - **Monitoramento das Políticas Públicas**: Acompanhar de perto as políticas públicas e as portarias que influenciam a alocação de recursos pode ajudar a antecipar mudanças e ajustar as estratégias de financiamento conforme necessário.
     """)
 
 
@@ -156,7 +158,7 @@ if escolha == "II. MAC x Procedimentos Hospitalares":
     st.markdown("""
     ### Análise da Evolução do Teto MAC em Cachoeiro de Itapemirim
 
-    A análise da evolução do Teto MAC em Cachoeiro de Itapemirim entre 2012 e 2024, comparada aos novos dados da produção hospitalar, revela uma relação complexa e não-linear entre o financiamento disponível e o volume de procedimentos realizados. O aumento substancial do Teto MAC, de :blue-background[R$ 354.781,35 em 2012] para :blue-background[R$ 7.757.060,79 em 2024], não se traduz diretamente em um crescimento proporcional em todas as categorias de procedimentos. Para entender melhor essa relação, é necessário analisar a evolução temporal de cada categoria de procedimento frente ao crescimento do Teto MAC.
+    A análise da evolução do Teto MAC em Cachoeiro de Itapemirim entre 2012 e 2024, comparada aos novos dados da produção hospitalar, revela uma relação complexa e não-linear entre o financiamento disponível e o volume de procedimentos realizados. O aumento substancial do Teto MAC, de :blue-background[R$ 354.781,35 em 2012] para :blue-background[R$ 12.370.666,44 em 2024], não se traduz diretamente em um crescimento proporcional em todas as categorias de procedimentos. Para entender melhor essa relação, é necessário analisar a evolução temporal de cada categoria de procedimento frente ao crescimento do Teto MAC.
 
     :blue[**Evolução do Teto MAC**]: O gráfico de recursos demonstra um crescimento expressivo, especialmente após 2018, impulsionado principalmente pelo aumento dos "Valores sem Incentivo." A estabilização dos "Valores com Incentivos" a partir de 2018 sugere uma mudança na política de financiamento, com maior ênfase nos recursos base.
 
@@ -411,10 +413,14 @@ if escolha == "IV. Correlação Produção vs Recursos":
     st.subheader("Correlação: Teto Total vs Procedimentos Clínicos")
     fig6 = plot_correlacao(teto_total, procedimentos_clinicos, 'Teto Total', 'Procedimentos Clínicos', 'Correlação: Teto Total vs Procedimentos Clínicos')
     st.plotly_chart(fig6)
+
     st.markdown("""
     ### Análise da Correlação: Teto Total vs Procedimentos Clínicos
-    A análise do gráfico "Correlação: Teto Total vs Procedimentos Clínicos" revela uma correlação positiva. À medida que o Teto Total aumenta, observa-se um aumento no número de Procedimentos Clínicos realizados. Isso sugere que, com o aumento dos recursos financeiros totais alocados, há uma tendência de aumento na quantidade desses procedimentos.
+    A análise do gráfico "Correlação: Teto Total vs Procedimentos Clínicos" revela uma tendência neutra. A linha de tendência no gráfico é quase horizontal, indicando que não há uma correlação significativa entre o Teto Total e os Procedimentos Clínicos. 
+
+    Em outras palavras, o número de Procedimentos Clínicos permanece relativamente constante, independentemente do valor do Teto Total.
     """)
+
 
 
     # Correlação: Teto Total vs Procedimentos Cirúrgicos
@@ -523,7 +529,7 @@ if escolha == "VI. Conclusão":
     st.markdown("""
     ## Crescimento do Teto MAC em Cachoeiro de Itapemirim
 
-    Ao longo de mais de uma década, de **2012 a 2024**, Cachoeiro de Itapemirim, um importante polo regional de saúde no Espírito Santo, tem demonstrado um crescimento notável no financiamento da Média e Alta Complexidade (MAC), refletido no aumento expressivo do seu **Teto MAC**. Este teto, que representa o limite financeiro para procedimentos de média e alta complexidade, saltou de **354.781,35 em 2012** para **R$ 7.757.060,79 em 2024.** 
+    Ao longo de mais de uma década, de **2012 a 2024**, Cachoeiro de Itapemirim, um importante polo regional de saúde no Espírito Santo, tem demonstrado um crescimento notável no financiamento da Média e Alta Complexidade (MAC), refletido no aumento expressivo do seu **Teto MAC**. Este teto, que representa o limite financeiro para procedimentos de média e alta complexidade, saltou de **354.781,35 em 2012** para **R$ 12.370.666,44 em 2024.** 
 
     Esse crescimento, embora substancial, foi acompanhado por uma tendência preocupante: a produção de procedimentos hospitalares e ambulatoriais da **UPA Dr. Antônio Jorge Abib Netto** não acompanhou esse ritmo, ficando consistentemente abaixo das metas estabelecidas pela **Portaria GM/MS nº 10/2017**.
 
