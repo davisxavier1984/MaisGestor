@@ -254,30 +254,33 @@ if escolha == "III. MAC x Produção Ambulatorial":
 if escolha == "IV. Correlação Produção vs Recursos":
     # Introdução às correlações
     st.title('Correlação entre os Recursos e a Produção')
-    st.subheader("Como foram calculadas as correlações")
     st.markdown("""
-    As correlações entre os valores recebidos (Teto Total, Valores Sem Incentivo, Valores com Incentivos) e a produção ambulatorial foram calculadas usando o coeficiente de correlação de _Pearson_. Este coeficiente mede a força e a direção da associação linear entre duas variáveis. Valores próximos de 1 ou -1 indicam uma correlação forte, enquanto valores próximos de 0 indicam pouca ou nenhuma correlação.
-    """)
+        As correlações entre os valores recebidos (Teto Total, Valores Sem Incentivo, Valores com Incentivos) e a produção ambulatorial foram calculadas usando o coeficiente de correlação de _Pearson_. Este coeficiente mede a força e a direção da associação linear entre duas variáveis. Valores próximos de 1 ou -1 indicam uma correlação forte, enquanto valores próximos de 0 indicam pouca ou nenhuma correlação.
+        """)
 
-    st.latex(r'''
-    r = \frac{n(\sum xy) - (\sum x)(\sum y)}{\sqrt{[n\sum x^2 - (\sum x)^2][n\sum y^2 - (\sum y)^2]}}
-    ''')
-
-    # Explicação dos componentes da fórmula
-    st.markdown("Onde:")
-    st.latex(r'''
-    \begin{align*}
-    r & \text{ é o coeficiente de correlação de Pearson} \\
-    n & \text{ é o número de pares de valores} \\
-    \sum xy & \text{ é a soma do produto de cada par de valores} \\
-    \sum x & \text{ é a soma dos valores da variável } x \\
-    \sum y & \text{ é a soma dos valores da variável } y \\
-    \sum x^2 & \text{ é a soma dos quadrados dos valores da variável } x \\
-    \sum y^2 & \text{ é a soma dos quadrados dos valores da variável } y \\
-    \end{align*}
-    ''')
     
-    with st.expander('Exemplo de Cálculo'):
+    with st.expander('Como foram calculadas as correlações'):
+        st.subheader("Exemplo de cálculo")
+        
+        st.latex(r'''
+        r = \frac{n(\sum xy) - (\sum x)(\sum y)}{\sqrt{[n\sum x^2 - (\sum x)^2][n\sum y^2 - (\sum y)^2]}}
+        ''')
+
+        # Explicação dos componentes da fórmula
+        st.markdown("Onde:")
+        st.latex(r'''
+        \begin{align*}
+        r & \text{ é o coeficiente de correlação de Pearson} \\
+        n & \text{ é o número de pares de valores} \\
+        \sum xy & \text{ é a soma do produto de cada par de valores} \\
+        \sum x & \text{ é a soma dos valores da variável } x \\
+        \sum y & \text{ é a soma dos valores da variável } y \\
+        \sum x^2 & \text{ é a soma dos quadrados dos valores da variável } x \\
+        \sum y^2 & \text{ é a soma dos quadrados dos valores da variável } y \\
+        \end{align*}
+        ''')
+        
+    
         # Valores hipotéticos para as variáveis x e y
         x = [10, 20, 30, 40, 50]
         y = [5, 10, 15, 20, 25]
@@ -346,8 +349,7 @@ if escolha == "IV. Correlação Produção vs Recursos":
         return fig
 
     # Apresentação das correlações calculadas
-    st.markdown("## Apresentação das correlações calculadas")
-
+    
     # Correlação: Teto Total vs Média Complexidade
     st.subheader("Correlação: Teto Total vs Média Complexidade")
     fig1 = plot_correlacao(teto_total, media_complexidade, 'Teto Total', 'Média Complexidade', 'Correlação: Teto Total vs Média Complexidade')
@@ -435,13 +437,6 @@ if escolha == "V. UPA 24h":
     st.image('upa.jpg')
     st.subheader('**ANÁLISE CONFORME PORTARIA GM/MS N. 10 – 2017**')
    
-
-
-
-
-
-
-
     # Dados
     anos = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"]
     procedimentos = {
@@ -459,12 +454,15 @@ if escolha == "V. UPA 24h":
     )]
 
     # Meta anual de produção
-    meta_anual = 81000
+    meta_anual = 121500
 
     # Gráfico para Atendimento de Urgência e Unidade de Pronto Atendimento
     fig1 = go.Figure()
     for procedimento, valores in procedimentos.items():
         fig1.add_trace(go.Scatter(x=anos, y=valores, mode='lines+markers', name=procedimento))
+
+    # Adicionar a linha para a soma dos três primeiros procedimentos
+    fig1.add_trace(go.Scatter(x=anos, y=soma_procedimentos, mode='lines+markers', name="Soma dos Três Primeiros Procedimentos", line=dict(color='purple')))
 
     fig1.add_shape(type="line", x0=anos[0], y0=meta_anual, x1=anos[-1], y1=meta_anual, line=dict(color="red", width=2, dash="dash"), name='Meta Anual')
 
@@ -476,131 +474,67 @@ if escolha == "V. UPA 24h":
     st.plotly_chart(fig1)
     st.caption('Fonte: TABWIN/MS')
 
-    # Gráfico para Acolhimento com Classificação de Risco
-    acolhimento_risco = {"Acolhimento com Classificação de Risco (0301060118)": [0, 0, 0, 0, 0, 0, 0]}
-    fig2 = go.Figure()
-    for procedimento, valores in acolhimento_risco.items():
-        fig2.add_trace(go.Scatter(x=anos, y=valores, mode='lines+markers', name=procedimento))
-
-    fig2.add_shape(type="line", x0=anos[0], y0=meta_anual, x1=anos[-1], y1=meta_anual, line=dict(color="red", width=2, dash="dash"), name='Meta Anual')
-
-    fig2.update_layout(title="Acolhimento com Classificação de Risco (0301060118)",
-                    xaxis_title="Ano", yaxis_title="Quantidade Aprovada",
-                    legend_title="Procedimentos", legend=dict(y=-0.3),
-                    xaxis=dict(tickmode='linear'), yaxis=dict(showgrid=True))
-
-    st.plotly_chart(fig2)
-    st.caption('Fonte: TABWIN/MS')
-
-    # Gráfico para Soma dos Três Primeiros Procedimentos
-    fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=anos, y=soma_procedimentos, mode='lines+markers', name="Soma dos Três Primeiros Procedimentos"))
-
-    fig3.add_shape(type="line", x0=anos[0], y0=meta_anual, x1=anos[-1], y1=meta_anual, line=dict(color="red", width=2, dash="dash"), name='Meta Anual')
-
-    fig3.update_layout(title="Soma dos Três Primeiros Procedimentos",
-                    xaxis_title="Ano", yaxis_title="Quantidade Aprovada",
-                    legend_title="Procedimentos", legend=dict(y=-1, x=0),
-                    xaxis=dict(tickmode='linear'), yaxis=dict(showgrid=True))
-
-    st.plotly_chart(fig3)
-    st.caption('Fonte: TABWIN/MS')
-
-
-
-
-
-
-
-
-
-
     # Texto explicativo
-    st.markdown("""
-    ### Situação da UPA de Euclides da Cunha - BA
+    st.markdown(
+        """
+        **A análise da UPA Dr. Antônio Jorge Abib Netto em Cachoeiro de Itapemirim revela uma preocupante queda na produção de procedimentos nos últimos anos, resultando em um desempenho abaixo das metas estabelecidas pela [Portaria GM/MS nº 10/2017](https://bvsms.saude.gov.br/bvs/saudelegis/gm/2017/prt0010_03_01_2017.html) para o Porte VIII.** 
 
-    Em 2 de outubro de 2024, a **Portaria GM/MS nº 5.430** reduziu o valor anual do teto MAC de Euclides da Cunha em R$ 900.000,00, rebaixando a habilitação da UPA de V para III. Essa mudança ocorreu porque a unidade não atingiu a produção mínima esperada conforme estipulado pela **Portaria GM/MS nº 10 de 3 de janeiro de 2017**. De acordo com o **Art. 38** dessa portaria, a produção mínima para a UPA 24h, registrada no SIA/SUS, para a Opção V, deve ser de 81.000 atendimentos anuais tanto para atendimentos médicos (códigos: 0301060029, 0301060096) quanto para acolhimento com classificação de risco (código: 0301060118).
+        Essa baixa produção, além de comprometer a capacidade de atendimento à população, **impacta diretamente no financiamento da unidade**, uma vez que a classificação da UPA, e consequentemente o valor do custeio, está diretamente ligada à sua produção. Portanto, o aumento da produção é crucial não apenas para garantir o acesso da população aos serviços, mas também para assegurar a sustentabilidade financeira da UPA.
 
-    #### Produção Anual dos Procedimentos
+        ### Impacto da Portaria 10/2017
 
-    | Ano | Atendimento de Urgência (0301060029) | Atendimento Médico (0301060096) | Total (Urgência + Médico) | Meta Anual (81.000) |
-    | --- | ----------------------------------- | ------------------------------- | ------------------------- | ------------------ |
-    | 2017 | 21.506 | 17.441 | 38.947 | Não atingiu |
-    | 2018 | 15.310 | 20.023 | 35.333 | Não atingiu |
-    | 2019 | 13.808 | 34.492 | 48.300 | Não atingiu |
-    | 2020 | 5.603  | 10.896 | 16.499 | Não atingiu |
-    | 2021 | 5.305  | 12.288 | 17.593 | Não atingiu |
-    | 2022 | 9.496  | 40.040 | 49.536 | Não atingiu |
-    | 2023 | 45.510 | 49.704 | 95.214 | Atingiu |
-    | 2024 | 36.148 | 31.809 | 67.957 | Não atingiu |
+        A Portaria 10/2017 estabelece diferentes valores de custeio para cada porte de UPA, de acordo com o número de médicos e a produção esperada. A baixa produção observada na UPA de Cachoeiro de Itapemirim pode levar a um **rebaixamento de sua classificação para um porte inferior**, acarretando uma redução significativa nos recursos financeiros. Essa redução, por sua vez, criaria um ciclo vicioso, dificultando ainda mais a capacidade da UPA de atender à demanda e atingir as metas de produção.
 
-    #### Produção Anual de Acolhimento com Classificação de Risco
+        ### Causas da Queda na Produção
 
-    | Ano | Produção Anual Real | Meta Anual (81.000) |
-    | --- | ------------------- | ------------------ |
-    | 2017 | 18.602 | Não atingiu |
-    | 2018 | 21.114 | Não atingiu |
-    | 2019 | 36.012 | Não atingiu |
-    | 2020 | 12.057 | Não atingiu |
-    | 2021 | 12.010 | Não atingiu |
-    | 2022 | 43.581 | Não atingiu |
-    | 2023 | 53.060 | Não atingiu |
-    | 2024 | 31.749 | Não atingiu |
+        A queda na produção pode ser **multifatorial**, incluindo:
 
-    ### Análise Detalhada
+        - Problemas na organização do trabalho
+        - Integração com a rede
+        - Capacidade instalada
+        - Eficiência da utilização dos recursos
 
-    1. **Desempenho Irregular**: A análise dos dados revela um desempenho irregular ao longo dos anos. Exceto em 2023, a soma dos atendimentos de urgência e médicos (códigos: 0301060029 e 0301060096) e o acolhimento com classificação de risco (código: 0301060118) ficou consistentemente abaixo da meta anual de 81.000 atendimentos. 
+        No entanto, um fator crucial a ser considerado é a **qualidade do registro dos procedimentos**. A subnotificação, ou seja, a falta de registro adequado dos procedimentos realizados, pode artificialmente reduzir a produção aparente da UPA, levando a uma classificação de porte inferior e à consequente redução de recursos. A melhoria no sistema de registro é, portanto, fundamental para garantir a correta avaliação do desempenho da UPA e evitar a redução de recursos por motivos administrativos.
 
-    2. **Ano de Destaque (2023)**: Em 2023, a soma dos atendimentos de urgência e médicos atingiu 95.214, superando a meta anual. No entanto, essa melhoria não foi suficiente para manter a habilitação V, uma vez que o acolhimento com classificação de risco também precisava atingir a meta, mas ficou em 53.060.
+        ### Necessidade de Aumentar a Produção
 
-    3. **Impacto da Pandemia**: A queda significativa na produção em 2020 e 2021 pode ser atribuída à pandemia de COVID-19, que afetou a capacidade operacional da unidade.
+        **O aumento da produção de procedimentos, especialmente do "Acolhimento com Classificação de Risco", é crucial para garantir:**
 
-    #### Recomendações
+        - **Cumprimento das Metas da Portaria 10/2017:** Atingir as metas de produção demonstra a eficiência da UPA e garante a manutenção do seu porte e financiamento.
+        - **Acesso Adequado aos Serviços:** Uma maior produção indica uma maior capacidade de atendimento à demanda da população, garantindo o acesso aos serviços de saúde.
+        - **Sustentabilidade Financeira:** O aumento da produção, levando à manutenção ou aumento do porte da UPA, assegura a disponibilidade de recursos financeiros para a operação da unidade.
+        - **Melhoria da Qualidade do Atendimento:** O aumento da produção, aliado a uma melhoria na qualidade do registro, permite uma avaliação mais precisa do desempenho da UPA e a implementação de medidas para melhorar a qualidade do atendimento.
 
-    Para reaver a habilitação V e garantir o aumento da produção, sugere-se:
-
-    1. **Aumento de Recursos e Profissionais**: Alocar mais profissionais e recursos para atender a demanda e aumentar a capacidade de atendimento da unidade. Isso inclui contratar mais médicos e pessoal de apoio para melhorar a eficiência dos serviços prestados.
-
-    2. **Melhoria na Gestão de Processos**: Implementar melhorias na gestão e eficiência dos processos internos para aumentar o número de atendimentos. Isso pode envolver a adoção de novas tecnologias para gestão de filas e prontuários eletrônicos, além de treinamentos para os funcionários.
-
-    3. **Campanhas de Divulgação**: Realizar campanhas de divulgação para incentivar a população a utilizar os serviços da UPA, garantindo que mais pacientes procurem atendimento. A informação pode ser disseminada através de mídias sociais, rádio local, e parcerias com outras instituições de saúde.
-
-    4. **Monitoramento Contínuo**: Estabelecer um sistema de monitoramento contínuo para acompanhar a produção mensal e tomar ações corretivas rapidamente. Isso ajudará a identificar possíveis problemas e implementar soluções antes que a produção caia significativamente abaixo da meta.
-
-    5. **Planejamento Estratégico**: Desenvolver um plano estratégico focado no aumento da produção para garantir que todas as metas sejam atingidas consistentemente. Este plano deve incluir objetivos claros, prazos definidos, e ações específicas para atingir as metas.
-    """)
-
-
-
+        **Em resumo**, a baixa produção da UPA de Cachoeiro de Itapemirim, possivelmente agravada por problemas de registro, cria um ciclo vicioso que impacta diretamente no seu financiamento. O aumento da produção, aliado a melhorias na gestão e na organização do trabalho, é fundamental para garantir a sustentabilidade financeira da UPA e o acesso adequado da população aos serviços de saúde. Portanto, o aumento do Teto MAC deve ser acompanhado por investimentos em melhorias operacionais e na qualidade do registro para garantir a eficácia dos recursos e o cumprimento das metas estabelecidas pela Portaria 10/2017.
+        """
+    )
 
 # Página 6: Conclusão
 if escolha == "VI. Conclusão":
     st.title('Necessidade de Aumento do Teto MAC')
 
     st.markdown("""
-    A análise detalhada dos procedimentos hospitalares e ambulatoriais em Euclides da Cunha, BA, no período de 2010 a 2023, revela uma tendência clara de crescimento na demanda por serviços de saúde. Essa demanda crescente é evidenciada pelo aumento significativo no número de procedimentos de média e alta complexidade, bem como pelos investimentos contínuos em recursos financeiros.
+    ## Crescimento do Teto MAC em Cachoeiro de Itapemirim
 
-    ### Importância de Manter o Nível Atual de Produção
+    Ao longo de mais de uma década, de **2012 a 2024**, Cachoeiro de Itapemirim, um importante polo regional de saúde no Espírito Santo, tem demonstrado um crescimento notável no financiamento da Média e Alta Complexidade (MAC), refletido no aumento expressivo do seu **Teto MAC**. Este teto, que representa o limite financeiro para procedimentos de média e alta complexidade, saltou de **354.781,35 em 2012** para **R$ 7.757.060,79 em 2024.** 
 
-    A capacidade de atender à população com serviços de saúde de qualidade depende diretamente do financiamento adequado. Nos últimos anos, observamos um aumento substancial nos procedimentos cirúrgicos e na produção ambulatorial, que só foi possível graças ao incremento nos valores do teto MAC e dos incentivos financeiros. Sem o aumento contínuo desses recursos, a sustentabilidade e a qualidade dos serviços de saúde podem ser comprometidas, levando a:
+    Esse crescimento, embora substancial, foi acompanhado por uma tendência preocupante: a produção de procedimentos hospitalares e ambulatoriais da **UPA Dr. Antônio Jorge Abib Netto** não acompanhou esse ritmo, ficando consistentemente abaixo das metas estabelecidas pela **Portaria GM/MS nº 10/2017**.
 
-    - **Aumento nos tempos de espera**: Com a alta demanda e recursos financeiros limitados, os tempos de espera para procedimentos médicos podem aumentar significativamente.
-    - **Redução na qualidade do atendimento**: A insuficiência de recursos pode levar à sobrecarga dos profissionais de saúde, resultando em uma queda na qualidade do atendimento e no cuidado aos pacientes.
-    - **Desigualdade no acesso aos serviços de saúde**: A falta de recursos pode exacerbar as desigualdades no acesso aos serviços, afetando desproporcionalmente as populações mais vulneráveis.
+    ### Desafios na Produção de Procedimentos
+    A análise detalhada dos dados de produção, em especial a queda acentuada no acolhimento com classificação de risco, revela desafios significativos na gestão e na operação da UPA. A **Portaria 10/2017**, que define as diretrizes para as UPAs 24h, estabelece metas de produção que, quando não atingidas, podem resultar em rebaixamento da classificação da unidade e, consequentemente, em redução dos recursos de custeio. A UPA de Cachoeiro, estimada como **Porte VIII**, opera, na prática, com uma produção que a aproxima de um porte inferior, indicando uma utilização aquém do potencial dos recursos disponibilizados.
 
-    ### Necessidade de Aumento dos Recursos
+    ### Gargalos Operacionais e Gestão de Recursos
+    Apesar da disponibilidade de uma equipe multiprofissional considerável, incluindo **48 médicos cadastrados no CNES**, e de um inventário de equipamentos aparentemente adequado, a UPA enfrenta dificuldades para converter o financiamento recebido em produção efetiva. Isso sugere a existência de gargalos operacionais, problemas na organização do trabalho, possíveis falhas na integração com a rede de atenção e, crucialmente, a necessidade de melhorias no registro e notificação dos procedimentos realizados.
 
-    Para garantir que a produção atual possa ser sustentada e aprimorada, é essencial aumentar os valores do teto MAC. 
-    Com base nos dados analisados, estimamos que um aumento de **pelo menos 15%** seja necessário para atender às demandas futuras. Isso significaria um incremento aproximado de **R$ 1.026.741,65**, garantindo:
-
-    - **Continuidade dos serviços de saúde**: Manter a capacidade de atender à população com serviços de saúde de qualidade e em tempo hábil.
-    - **Aprimoramento das infraestruturas de saúde**: Investimentos contínuos em equipamentos, instalações e capacitação dos profissionais de saúde.
-    - **Resiliência do sistema de saúde**: Preparação para enfrentar possíveis crises sanitárias e atender à demanda crescente por serviços especializados.
+    ### Importância do Teto MAC
+    A correlação entre o aumento do Teto MAC e a produção ambulatorial e hospitalar mostra que o simples incremento no financiamento não garante, automaticamente, um aumento proporcional na oferta de serviços. Fatores como a **capacidade instalada**, a **eficiência na gestão dos recursos**, a **correta classificação de risco** e a **integração com a rede de atenção à saúde** são igualmente importantes para assegurar que os recursos financeiros se traduzam em atendimento efetivo à população.
 
     ### Conclusão
+    Nesse contexto, torna-se evidente que a continuidade do crescimento do **Teto MAC** para Cachoeiro de Itapemirim é fundamental, não apenas para manter o patamar atual de financiamento, mas para impulsionar as melhorias necessárias na UPA e em todo o sistema de média e alta complexidade do município. O aumento do **Teto MAC**, quando acompanhado de investimentos em gestão, capacitação profissional, melhoria dos processos de trabalho, e aprimoramento do registro de informações, permitirá que Cachoeiro de Itapemirim não apenas atinja as metas de produção estabelecidas, mas também amplie e qualifique o atendimento à sua população, consolidando seu papel como um importante centro regional de saúde.
 
-    A análise dos dados indica uma forte correlação positiva entre o aumento dos recursos financeiros e a melhoria nos serviços de saúde, especialmente nos procedimentos de média e alta complexidade. Para garantir um sistema de saúde sustentável e equitativo, é imperativo que os recursos financeiros continuem a crescer em conformidade com a demanda. Um aumento no teto MAC é não apenas uma necessidade, mas uma responsabilidade para assegurar a saúde e o bem-estar da população de Euclides da Cunha, BA. Investir na saúde é investir no futuro.
+    Ignorar essa necessidade pode comprometer a sustentabilidade do sistema de saúde local e, consequentemente, o acesso da população a serviços essenciais de média e alta complexidade. Portanto, o aumento do **Teto MAC** é um investimento estratégico para o futuro da saúde em Cachoeiro de Itapemirim, garantindo que o município possa continuar a atender às crescentes demandas de sua população e região.
     """)
+
 
 
 
