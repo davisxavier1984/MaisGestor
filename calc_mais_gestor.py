@@ -10,6 +10,16 @@ from requests.exceptions import RequestException
 # Nome do arquivo JSON para armazenar os dados
 DATA_FILE = "data.json"
 
+# Função para carregar os dados do data.json
+def load_data_from_json():
+    """Carrega os dados do arquivo data.json. Retorna um dicionário vazio se o arquivo não existir."""
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.error("Selecione UF e Município e clique em Consultar.")
+        return {}
+
 def style_metric_cards(
     background_color: str = "#f5f5f5",
     border_size_px: int = 1,
@@ -99,13 +109,13 @@ def consultar_api(codigo_ibge: str, competencia: str) -> dict | None:
         return None
 
 def main():
-    st.set_page_config(page_title="Financiamento da Atenção Primária")
+    st.set_page_config(page_title="Financiamento da Saúde")
 
     col1, col2, col3 = st.columns([1,1,1])
     with col2:
         st.image('logo_colorida_mg.png', width=200)
 
-    st.title("Calculadora PAP")
+    st.title("🏥 Sistema de Monitoramento de Financiamento da Saúde")
     style_metric_cards()
 
     with st.expander("🔍 Parâmetros de Consulta", expanded=True):
@@ -135,10 +145,12 @@ def main():
         dados = consultar_api(codigo_ibge, competencia)
         st.session_state['dados'] = dados
 
-    if 'dados' in st.session_state:
-        dados = st.session_state['dados']
+    # Carrega os dados do data.json se existirem
+    st.session_state['dados'] = load_data_from_json()
+
+    if st.session_state['dados']:
         st.subheader("Informações Gerais")
-        dados_pagamentos = dados.get("pagamentos", [])
+        dados_pagamentos = st.session_state['dados'].get("pagamentos", [])
         if dados_pagamentos:
             df = pd.DataFrame(dados_pagamentos)
             populacao = df['qtPopulacao'].iloc[0] if 'qtPopulacao' in df.columns else 0
@@ -161,7 +173,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-
+    
 #=============================================== PARTE 2 ===============================================
 
 # Carrega a configuração do config.json
@@ -169,8 +181,7 @@ with open("config.json", "r", encoding="utf-8") as f:
     config_data = json.load(f)
 
 # Carrega os dados da API do data.json (atualizado pela parte1.py)
-with open("data.json", "r", encoding="utf-8") as f:
-    api_data = json.load(f)
+# api_data = load_data_from_json() # Já foi carregado na Parte 1
 
 # Mantenha os dados de config.json separados
 data = config_data["data"]
@@ -228,24 +239,24 @@ def get_estrato(populacao: int) -> str:
     else:
         return "4"
 
+st.title('Calculadora de Serviços de Saúde')
+
 # Aplicar CSS
 st.markdown(CSS, unsafe_allow_html=True)
 
 #=============================================== PARTE 3 ===============================================
 
-# Carregando dados do config.json e data.json
+# Carregando dados do config.json (data.json já foi carregado na Parte 1)
 with open("config.json", "r", encoding="utf-8") as f:
     config_data = json.load(f)
 
-with open("data.json", "r", encoding="utf-8") as f:
-    api_data = json.load(f)
-
-data = config_data["data"]
-updated_categories = config_data["updated_categories"]
-subcategories = config_data["subcategories"]
-quality_values = config_data["quality_values"]
-fixed_component_values = config_data["fixed_component_values"]
-service_to_plan = config_data["service_to_plan"]
+# Já carregado na Parte 2
+# data = config_data["data"]
+# updated_categories = config_data["updated_categories"]
+# subcategories = config_data["subcategories"]
+# quality_values = config_data["quality_values"]
+# fixed_component_values = config_data["fixed_component_values"]
+# service_to_plan = config_data["service_to_plan"]
 implantacao_values = config_data["implantacao_values"]
 
 selected_services: dict[str, int] = {}
@@ -365,15 +376,10 @@ for category, services in updated_categories.items():
                         # Agora é um dicionário para armazenar as chaves únicas
                         st.session_state['implantacao_campos'][category] = {}
 
-                    # Chaves únicas para os campos de implantação, verificando duplicidade da categoria
-                    if category in service:
-                        key_q = f"{service}_implantacao_q_quantidade"
-                        key_v = f"{service}_implantacao_valor"
-                        key_s = f"{service}_implantacao_subtotal"
-                    else:
-                        key_q = f"{category}_{service}_implantacao_q_quantidade"
-                        key_v = f"{category}_{service}_implantacao_valor"
-                        key_s = f"{category}_{service}_implantacao_subtotal"
+                    # Chaves únicas para os campos de implantação
+                    key_q = f"{category}_{service}_implantacao_q_quantidade"
+                    key_v = f"{category}_{service}_implantacao_valor"
+                    key_s = f"{category}_{service}_implantacao_subtotal"
 
                     # Armazenar as chaves no dicionário
                     st.session_state['implantacao_campos'][category][key_q] = ''
@@ -454,278 +460,284 @@ with col_vinculo:
 
 calcular_button = st.button('Calcular', use_container_width=True)
 
+
 #=============================================== PARTE 4 ===============================================
 
-
-# Carregando dados do config.json e data.json
+# Carregando dados do config.json (data.json e api_data já foram carregados anteriormente)
 with open("config.json", "r", encoding="utf-8") as f:
     config_data = json.load(f)
 
-with open("data.json", "r", encoding="utf-8") as f:
-    api_data = json.load(f)
+# Já carregado nas Partes 2 e 3
+# data = config_data["data"]
+# updated_categories = config_data["updated_categories"]
+# subcategories = config_data["subcategories"]
+# quality_values = config_data["quality_values"]
+# fixed_component_values = config_data["fixed_component_values"]
+# service_to_plan = config_data["service_to_plan"]
+# implantacao_values = config_data["implantacao_values"]
 
-data = config_data["data"]
-updated_categories = config_data["updated_categories"]
-subcategories = config_data["subcategories"]
-quality_values = config_data["quality_values"]
-fixed_component_values = config_data["fixed_component_values"]
-service_to_plan = config_data["service_to_plan"]
-implantacao_values = config_data["implantacao_values"]
+if calcular_button:
+    # Só prossegue com os cálculos se houver dados carregados
+    if st.session_state['dados']:
+        if all(q == 0 for q in selected_services.values()):
+            st.error("Por favor, selecione pelo menos um serviço para calcular.")
+        else:
+            # Informações da API
+            st.write("**Informações da API:**")
+            st.write(f"**IED:** {st.session_state.get('ied', 'Não informado')}")
+            st.write(f"**Competência:** {st.session_state.get('competencia', 'Não informado')}")
+            st.write(f"**População:** {st.session_state.get('populacao', 'Não informado')}")
 
-if calcular_button:  # Usa a variável calcular_button da Parte 3
-    if all(q == 0 for q in selected_services.values()):
-        st.error("Por favor, selecione pelo menos um serviço para calcular.")
+            # COMPONENTE 01 - COMPONENTE FIXO
+            st.subheader("Componente I - Componente Fixo")
+            fixed_table: list[list[str | int | float]] = []
+
+            # Construindo a tabela do componente fixo
+            for service in ["eSF", "eAP 30h", "eAP 20h"]:
+                quantity = selected_services.get(service, 0)
+                if quantity > 0:
+                    # Buscar valor editado, senão buscar no fixed_component_values com base no estrato
+                    if service in edited_values:
+                        valor = edited_values[service]
+                    else:
+                        populacao = st.session_state.get('populacao', 0)
+                        estrato = get_estrato(populacao)
+                        if estrato in fixed_component_values:
+                            valor = float(fixed_component_values[estrato][service].replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        else:
+                            valor = 0
+
+                    total_value = valor * quantity
+                    fixed_table.append([service, format_currency(valor), quantity, format_currency(total_value)])
+
+            # Adicionar linhas para implantação de eSF, eAP, eMulti (agrupadas após os serviços)
+            for service in ["eSF", "eAP 30h", "eAP 20h", "eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:
+                if selected_services.get(service, 0) > 0:
+                    if service in edited_implantacao_values:
+                        valor_implantacao = edited_implantacao_values[service]
+                    else:
+                        if service in implantacao_values:
+                            valor_implantacao = float(implantacao_values.get(service, "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        elif service == "eMULTI Ampl.":
+                            valor_implantacao = float(implantacao_values.get("eMulti Ampliada", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        elif service == "eMULTI Compl.":
+                            valor_implantacao = float(implantacao_values.get("eMulti Complementar", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        elif service == "eMULTI Estrat.":
+                            valor_implantacao = float(implantacao_values.get("eMulti Estratégica", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        else:
+                            valor_implantacao = 0
+
+                    if service in edited_implantacao_quantity:
+                        quantity_implantacao = edited_implantacao_quantity[service]
+                    else:
+                        quantity_implantacao = 0
+
+                    total_implantacao = valor_implantacao * quantity_implantacao
+                    fixed_table.append([f"{service} (Implantação)", format_currency(valor_implantacao), quantity_implantacao, format_currency(total_implantacao)])
+
+            fixed_df = pd.DataFrame(fixed_table, columns=['Serviço', 'Valor Unitário', 'Quantidade', 'Valor Total'])
+
+            # Adicionar linha de total à tabela do componente fixo
+            total_fixed_value = sum(
+                float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
+                for val in fixed_df['Valor Total']
+            )
+            total_fixed_row = pd.DataFrame({
+                'Serviço': ['Total'],
+                'Valor Unitário': [''],
+                'Quantidade': [''],
+                'Valor Total': [format_currency(total_fixed_value)]
+            })
+            fixed_df = pd.concat([fixed_df, total_fixed_row], ignore_index=True)
+
+            st.table(fixed_df)
+
+            # COMPONENTE 02 - VÍNCULO E ACOMPANHAMENTO TERRITORIAL.
+            st.subheader("Componente II - Vínculo e Acompanhamento Territorial")
+            vinculo_table: list[list[str | int | float]] = []
+
+            # Valores do componente de vínculo e acompanhamento
+            vinculo_values: dict[str, dict[str, float]] = {
+                'eSF': {'Ótimo': 8000, 'Bom': 6000, 'Suficiente': 4000, 'Regular': 2000},
+                'eAP 30h': {'Ótimo': 4000, 'Bom': 3000, 'Suficiente': 2000, 'Regular': 1000},
+                'eAP 20h': {'Ótimo': 3000, 'Bom': 2250, 'Suficiente': 1500, 'Regular': 750},
+            }
+
+            # Construindo a tabela de vínculo e acompanhamento
+            for service, quality_levels in vinculo_values.items():
+                if Vinculo in quality_levels:
+                    quantity = selected_services.get(service, 0)
+                    if quantity > 0:
+                        if service in edited_values:
+                            value = edited_values[service]
+                        else:
+                            value = quality_levels[Vinculo]
+                        total_value = value * quantity
+                        vinculo_table.append([service, Vinculo, format_currency(value), quantity, format_currency(total_value)])
+
+            vinculo_df = pd.DataFrame(vinculo_table, columns=['Serviço', 'Qualidade', 'Valor Unitário', 'Quantidade', 'Valor Total'])
+
+            # Adicionar linha de total à tabela de vínculo e acompanhamento
+            total_vinculo_value = sum(
+                float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
+                for val in vinculo_df['Valor Total']
+            )
+            total_vinculo_row = pd.DataFrame({
+                'Serviço': ['Total'],
+                'Qualidade': [''],
+                'Valor Unitário': [''],
+                'Quantidade': [''],
+                'Valor Total': [format_currency(total_vinculo_value)]
+            })
+            vinculo_df = pd.concat([vinculo_df, total_vinculo_row], ignore_index=True)
+
+            st.table(vinculo_df)
+
+            # COMPONENTE 03 - QUALIDADE
+            st.subheader("Componente III - Qualidade")
+            quality_table: list[list[str | int | float]] = []
+
+            # Construindo a tabela de qualidade
+            for service, quality_levels in quality_values.items():
+                if Classificacao in quality_levels:
+                    quantity = selected_services.get(service, 0)
+                    if quantity > 0:
+                        if service in edited_values:
+                            value = edited_values[service]
+                        else:
+                            value = quality_levels[Classificacao]
+                        total_value = value * quantity
+                        quality_table.append([service, Classificacao, format_currency(value), quantity, format_currency(total_value)])
+
+            quality_df = pd.DataFrame(quality_table, columns=['Serviço', 'Qualidade', 'Valor Unitário', 'Quantidade', 'Valor Total'])
+
+            total_quality_value = sum(
+                float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
+                for val in quality_df['Valor Total']
+            )
+            total_quality_row = pd.DataFrame({
+                'Serviço': ['Total'],
+                'Qualidade': [''],
+                'Valor Unitário': [''],
+                'Quantidade': [''],
+                'Valor Total': [format_currency(total_quality_value)]
+            })
+            quality_df = pd.concat([quality_df, total_quality_row], ignore_index=True)
+
+            st.table(quality_df)
+
+            # IV - COMPONENTE PARA IMPLANTAÇÃO E MANUTENÇÃO DE PROGRAMAS, SERVIÇOS, PROFISSIONAIS E OUTRAS COMPOSIÇÕES DE EQUIPES QUE ATUAM NA APS
+            st.subheader("IV - Componente para Ações Estratégicas")
+            implantacao_manutencao_table: list[list[str | int | float]] = []
+
+            # Todos os serviços que não estão em quality_values, têm valor em data e *não* são da Saúde Bucal
+            implantacao_manutencao_services = [
+                service for service in data
+                if service not in quality_values
+                and data[service]['valor'] != 'Sem cálculo'
+                and service not in updated_categories.get('Saúde Bucal', []) # Removendo serviços da Saúde Bucal
+            ]
+
+            for service in implantacao_manutencao_services:
+                quantity = selected_services.get(service, 0)
+                if quantity > 0:
+                    # Buscar valor editado, senão buscar valor unitário de config.json
+                    if service in edited_values:
+                        valor = edited_values[service]
+                    else:
+                        try:
+                            valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        except ValueError:
+                            st.error(f"Valor inválido para {service} no config.json.")
+                            valor = 0
+
+                    total = valor * quantity
+                    implantacao_manutencao_table.append([service, quantity, format_currency(valor), format_currency(total)])
+
+            implantacao_manutencao_df = pd.DataFrame(implantacao_manutencao_table, columns=['Serviço', 'Quantidade', 'Valor Unitário', 'Valor Total'])
+
+            total_implantacao_manutencao_value = sum(
+                float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
+                for val in implantacao_manutencao_df['Valor Total']
+            )
+            total_implantacao_manutencao_row = pd.DataFrame({
+                'Serviço': ['Subtotal'],
+                'Quantidade': [''],
+                'Valor Unitário': [''],
+                'Valor Total': [format_currency(total_implantacao_manutencao_value)]
+            })
+            implantacao_manutencao_df = pd.concat([implantacao_manutencao_df, total_implantacao_manutencao_row], ignore_index=True)
+
+            st.table(implantacao_manutencao_df)
+
+            # V - COMPONENTE PARA ATENÇÃO À SAÚDE BUCAL
+            st.subheader("V - Componente para Atenção à Saúde Bucal")
+            saude_bucal_table: list[list[str | int | float]] = []
+
+            # Adiciona as linhas de serviços da Saúde Bucal
+            saude_bucal_services = updated_categories.get('Saúde Bucal', [])
+
+            for service in saude_bucal_services:
+                quantity = selected_services.get(service, 0)
+                if quantity > 0:
+                    # Buscar valor editado, senão buscar valor unitário de quality_values ou config.json
+                    if service in edited_values:
+                        valor = edited_values[service]
+                    elif service in quality_values:
+                        valor = float(quality_values[service][Classificacao])
+                    else:
+                        try:
+                            valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        except:
+                            valor = 0
+
+                    total = valor * quantity
+                    saude_bucal_table.append([service, quantity, format_currency(valor), format_currency(total)])
+
+            saude_bucal_df = pd.DataFrame(saude_bucal_table, columns=['Serviço', 'Quantidade', 'Valor Unitário', 'Valor Total'])
+
+            total_saude_bucal_value = sum(
+                float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
+                for val in saude_bucal_df['Valor Total'].tolist()
+            )
+
+            total_saude_bucal_row = pd.DataFrame({
+                'Serviço': ['Subtotal'],
+                'Quantidade': [''],
+                'Valor Unitário': [''],
+                'Valor Total': [format_currency(total_saude_bucal_value)]
+            })
+            saude_bucal_df = pd.concat([saude_bucal_df, total_saude_bucal_row], ignore_index=True)
+
+            st.table(saude_bucal_df)
+
+            # COMPONENTE PER CAPITA (CÁLCULO SIMPLIFICADO)
+            st.subheader("VI - Componente Per Capita (Cálculo Simplificado)")
+            populacao = st.session_state.get('populacao', 0)
+            valor_per_capita = 5.95
+            total_per_capita = (valor_per_capita * populacao) / 12
+
+            per_capita_df = pd.DataFrame({
+                'Descrição': ['Valor per capita', 'População', 'Total Per Capita (Mensal)'],
+                'Valor': [format_currency(valor_per_capita), populacao, format_currency(total_per_capita)]
+            })
+            st.table(per_capita_df)
+
+            # CÁLCULO DO TOTAL GERAL
+            total_geral = total_fixed_value + total_vinculo_value + total_quality_value + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita
+
+            # EXIBIÇÃO DO TOTAL GERAL
+            st.subheader("Total Geral")
+            total_geral_df = pd.DataFrame({
+                'Descrição': ['Total Geral'],
+                'Valor': [format_currency(total_geral)]
+            })
+            st.table(total_geral_df)
+
+            # Destaque para o valor total geral
+            st.markdown(f"<h3 style='text-align: center; color: blue;'>Total Geral: {format_currency(total_geral)}</h3>", unsafe_allow_html=True)
     else:
-        st.header("Valores do Novo Cofinanciamento")
-
-        # COMPONENTE 01 - COMPONENTE FIXO
-        st.subheader("Componente I - Componente Fixo")
-        fixed_table: list[list[str | int | float]] = []
-
-        # Construindo a tabela do componente fixo
-        for service in ["eSF", "eAP 30h", "eAP 20h"]:
-            quantity = selected_services.get(service, 0)
-            if quantity > 0:
-                # Buscar valor editado, senão buscar no fixed_component_values com base no estrato
-                if service in edited_values:
-                    valor = edited_values[service]
-                else:
-                    populacao = st.session_state.get('populacao', 0)
-                    estrato = get_estrato(populacao)
-                    if estrato in fixed_component_values:
-                        valor = float(fixed_component_values[estrato][service].replace('R$ ', '').replace('.', '').replace(',', '.'))
-                    else:
-                        valor = 0
-
-                total_value = valor * quantity
-                fixed_table.append([service, format_currency(valor), quantity, format_currency(total_value)])
-
-        # Adicionar linhas para implantação de eSF, eAP, eMulti (agrupadas após os serviços)
-        for service in ["eSF", "eAP 30h", "eAP 20h", "eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:
-            if selected_services.get(service, 0) > 0:
-                if service in edited_implantacao_values:
-                    valor_implantacao = edited_implantacao_values[service]
-                else:
-                    if service in implantacao_values:
-                        valor_implantacao = float(implantacao_values.get(service, "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
-                    elif service == "eMULTI Ampl.":
-                        valor_implantacao = float(implantacao_values.get("eMulti Ampliada", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
-                    elif service == "eMULTI Compl.":
-                        valor_implantacao = float(implantacao_values.get("eMulti Complementar", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
-                    elif service == "eMULTI Estrat.":
-                        valor_implantacao = float(implantacao_values.get("eMulti Estratégica", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
-                    else:
-                        valor_implantacao = 0
-
-                if service in edited_implantacao_quantity:
-                    quantity_implantacao = edited_implantacao_quantity[service]
-                else:
-                    quantity_implantacao = 0
-
-                total_implantacao = valor_implantacao * quantity_implantacao
-                fixed_table.append([f"{service} (Implantação)", format_currency(valor_implantacao), quantity_implantacao, format_currency(total_implantacao)])
-
-        fixed_df = pd.DataFrame(fixed_table, columns=['Serviço', 'Valor Unitário', 'Quantidade', 'Valor Total'])
-
-        # Adicionar linha de total à tabela do componente fixo
-        total_fixed_value = sum(
-            float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
-            for val in fixed_df['Valor Total']
-        )
-        total_fixed_row = pd.DataFrame({
-            'Serviço': ['Total'],
-            'Valor Unitário': [''],
-            'Quantidade': [''],
-            'Valor Total': [format_currency(total_fixed_value)]
-        })
-        fixed_df = pd.concat([fixed_df, total_fixed_row], ignore_index=True)
-
-        st.table(fixed_df)
-
-        # COMPONENTE 02 - VÍNCULO E ACOMPANHAMENTO TERRITORIAL.
-        st.subheader("Componente II - Vínculo e Acompanhamento Territorial")
-        vinculo_table: list[list[str | int | float]] = []
-
-        # Valores do componente de vínculo e acompanhamento
-        vinculo_values: dict[str, dict[str, float]] = {
-            'eSF': {'Ótimo': 8000, 'Bom': 6000, 'Suficiente': 4000, 'Regular': 2000},
-            'eAP 30h': {'Ótimo': 4000, 'Bom': 3000, 'Suficiente': 2000, 'Regular': 1000},
-            'eAP 20h': {'Ótimo': 3000, 'Bom': 2250, 'Suficiente': 1500, 'Regular': 750},
-        }
-
-        # Construindo a tabela de vínculo e acompanhamento
-        for service, quality_levels in vinculo_values.items():
-            if Vinculo in quality_levels:
-                quantity = selected_services.get(service, 0)
-                if quantity > 0:
-                    if service in edited_values:
-                        value = edited_values[service]
-                    else:
-                        value = quality_levels[Vinculo]
-                    total_value = value * quantity
-                    vinculo_table.append([service, Vinculo, format_currency(value), quantity, format_currency(total_value)])
-
-        vinculo_df = pd.DataFrame(vinculo_table, columns=['Serviço', 'Qualidade', 'Valor Unitário', 'Quantidade', 'Valor Total'])
-
-        # Adicionar linha de total à tabela de vínculo e acompanhamento
-        total_vinculo_value = sum(
-            float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
-            for val in vinculo_df['Valor Total']
-        )
-        total_vinculo_row = pd.DataFrame({
-            'Serviço': ['Total'],
-            'Qualidade': [''],
-            'Valor Unitário': [''],
-            'Quantidade': [''],
-            'Valor Total': [format_currency(total_vinculo_value)]
-        })
-        vinculo_df = pd.concat([vinculo_df, total_vinculo_row], ignore_index=True)
-
-        st.table(vinculo_df)
-
-        # COMPONENTE 03 - QUALIDADE
-        st.subheader("Componente III - Qualidade")
-        quality_table: list[list[str | int | float]] = []
-
-        # Construindo a tabela de qualidade
-        for service, quality_levels in quality_values.items():
-            if Classificacao in quality_levels:
-                quantity = selected_services.get(service, 0)
-                if quantity > 0:
-                    if service in edited_values:
-                        value = edited_values[service]
-                    else:
-                        value = quality_levels[Classificacao]
-                    total_value = value * quantity
-                    quality_table.append([service, Classificacao, format_currency(value), quantity, format_currency(total_value)])
-
-        quality_df = pd.DataFrame(quality_table, columns=['Serviço', 'Qualidade', 'Valor Unitário', 'Quantidade', 'Valor Total'])
-
-        total_quality_value = sum(
-            float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
-            for val in quality_df['Valor Total']
-        )
-        total_quality_row = pd.DataFrame({
-            'Serviço': ['Total'],
-            'Qualidade': [''],
-            'Valor Unitário': [''],
-            'Quantidade': [''],
-            'Valor Total': [format_currency(total_quality_value)]
-        })
-        quality_df = pd.concat([quality_df, total_quality_row], ignore_index=True)
-
-        st.table(quality_df)
-
-        # IV - COMPONENTE PARA IMPLANTAÇÃO E MANUTENÇÃO DE PROGRAMAS, SERVIÇOS, PROFISSIONAIS E OUTRAS COMPOSIÇÕES DE EQUIPES QUE ATUAM NA APS
-        st.subheader("IV - Componente para ações e programas da APS.")
-        implantacao_manutencao_table: list[list[str | int | float]] = []
-
-        # Todos os serviços que não estão em quality_values, têm valor em data e *não* são da Saúde Bucal
-        implantacao_manutencao_services = [
-            service for service in data
-            if service not in quality_values
-            and data[service]['valor'] != 'Sem cálculo'
-            and service not in updated_categories.get('Saúde Bucal', []) # Removendo serviços da Saúde Bucal
-        ]
-
-        for service in implantacao_manutencao_services:
-            quantity = selected_services.get(service, 0)
-            if quantity > 0:
-                # Buscar valor editado, senão buscar valor unitário de config.json
-                if service in edited_values:
-                    valor = edited_values[service]
-                else:
-                    try:
-                        valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
-                    except ValueError:
-                        st.error(f"Valor inválido para {service} no config.json.")
-                        valor = 0
-
-                total = valor * quantity
-                implantacao_manutencao_table.append([service, quantity, format_currency(valor), format_currency(total)])
-
-        implantacao_manutencao_df = pd.DataFrame(implantacao_manutencao_table, columns=['Serviço', 'Quantidade', 'Valor Unitário', 'Valor Total'])
-
-        total_implantacao_manutencao_value = sum(
-            float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
-            for val in implantacao_manutencao_df['Valor Total']
-        )
-        total_implantacao_manutencao_row = pd.DataFrame({
-            'Serviço': ['Subtotal'],
-            'Quantidade': [''],
-            'Valor Unitário': [''],
-            'Valor Total': [format_currency(total_implantacao_manutencao_value)]
-        })
-        implantacao_manutencao_df = pd.concat([implantacao_manutencao_df, total_implantacao_manutencao_row], ignore_index=True)
-
-        st.table(implantacao_manutencao_df)
-
-        # V - COMPONENTE PARA ATENÇÃO À SAÚDE BUCAL
-        st.subheader("V - Componente para Atenção à Saúde Bucal")
-        saude_bucal_table: list[list[str | int | float]] = []
-
-        # Adiciona as linhas de serviços da Saúde Bucal
-        saude_bucal_services = updated_categories.get('Saúde Bucal', [])
-
-        for service in saude_bucal_services:
-            quantity = selected_services.get(service, 0)
-            if quantity > 0:
-                # Buscar valor editado, senão buscar valor unitário de quality_values ou config.json
-                if service in edited_values:
-                    valor = edited_values[service]
-                elif service in quality_values:
-                    valor = float(quality_values[service][Classificacao])
-                else:
-                    try:
-                        valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
-                    except:
-                        valor = 0
-
-                total = valor * quantity
-                saude_bucal_table.append([service, quantity, format_currency(valor), format_currency(total)])
-
-        saude_bucal_df = pd.DataFrame(saude_bucal_table, columns=['Serviço', 'Quantidade', 'Valor Unitário', 'Valor Total'])
-
-        total_saude_bucal_value = sum(
-            float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
-            for val in saude_bucal_df['Valor Total'].tolist()
-        )
-
-        total_saude_bucal_row = pd.DataFrame({
-            'Serviço': ['Subtotal'],
-            'Quantidade': [''],
-            'Valor Unitário': [''],
-            'Valor Total': [format_currency(total_saude_bucal_value)]
-        })
-        saude_bucal_df = pd.concat([saude_bucal_df, total_saude_bucal_row], ignore_index=True)
-
-        st.table(saude_bucal_df)
-
-        # COMPONENTE PER CAPITA (CÁLCULO SIMPLIFICADO)
-        st.subheader("VI - Componente Per Capita (Cálculo Simplificado)")
-        populacao = st.session_state.get('populacao', 0)
-        valor_per_capita = 5.95
-        total_per_capita = (valor_per_capita * populacao) / 12
-
-        per_capita_df = pd.DataFrame({
-            'Descrição': ['Valor per capita', 'População', 'Total Per Capita (Mensal)'],
-            'Valor': [format_currency(valor_per_capita), populacao, format_currency(total_per_capita)]
-        })
-        st.table(per_capita_df)
-
-        # CÁLCULO DO TOTAL GERAL
-        total_geral = total_fixed_value + total_vinculo_value + total_quality_value + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita
-
-        # EXIBIÇÃO DO TOTAL GERAL
-        st.subheader("Total Geral")
-        total_geral_df = pd.DataFrame({
-            'Descrição': ['Total Geral'],
-            'Valor': [format_currency(total_geral)]
-        })
-        st.table(total_geral_df)
-
-        # Destaque para o valor total geral
-        st.markdown(f"<h3 style='text-align: center; color: blue;'>Total Geral: {format_currency(total_geral)}</h3>", unsafe_allow_html=True)
+        st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
 
 def main():
     pass
