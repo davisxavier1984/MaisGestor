@@ -115,7 +115,7 @@ def main():
     with col2:
         st.image('logo_colorida_mg.png', width=200)
 
-    st.title("🏥 Sistema de Monitoramento de Financiamento da Saúde")
+    st.title("Calculadora PAP")
     style_metric_cards()
 
     with st.expander("🔍 Parâmetros de Consulta", expanded=True):
@@ -239,7 +239,6 @@ def get_estrato(populacao: int) -> str:
     else:
         return "4"
 
-st.title('Calculadora de Serviços de Saúde')
 
 # Aplicar CSS
 st.markdown(CSS, unsafe_allow_html=True)
@@ -482,11 +481,7 @@ if calcular_button:
         if all(q == 0 for q in selected_services.values()):
             st.error("Por favor, selecione pelo menos um serviço para calcular.")
         else:
-            # Informações da API
-            st.write("**Informações da API:**")
-            st.write(f"**IED:** {st.session_state.get('ied', 'Não informado')}")
-            st.write(f"**Competência:** {st.session_state.get('competencia', 'Não informado')}")
-            st.write(f"**População:** {st.session_state.get('populacao', 'Não informado')}")
+            st.header('Valores PAP')
 
             # COMPONENTE 01 - COMPONENTE FIXO
             st.subheader("Componente I - Componente Fixo")
