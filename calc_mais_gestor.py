@@ -365,10 +365,15 @@ for category, services in updated_categories.items():
                         # Agora é um dicionário para armazenar as chaves únicas
                         st.session_state['implantacao_campos'][category] = {}
 
-                    # Chaves únicas para os campos de implantação
-                    key_q = f"{category}_{service}_implantacao_q_quantidade"
-                    key_v = f"{category}_{service}_implantacao_valor"
-                    key_s = f"{category}_{service}_implantacao_subtotal"
+                    # Chaves únicas para os campos de implantação, verificando duplicidade da categoria
+                    if category in service:
+                        key_q = f"{service}_implantacao_q_quantidade"
+                        key_v = f"{service}_implantacao_valor"
+                        key_s = f"{service}_implantacao_subtotal"
+                    else:
+                        key_q = f"{category}_{service}_implantacao_q_quantidade"
+                        key_v = f"{category}_{service}_implantacao_valor"
+                        key_s = f"{category}_{service}_implantacao_subtotal"
 
                     # Armazenar as chaves no dicionário
                     st.session_state['implantacao_campos'][category][key_q] = ''
@@ -392,7 +397,7 @@ for category, services in updated_categories.items():
 
                     with col1_imp:
                         # Quantidade de implantação
-                        quantity_implantacao = st.number_input(f'Quantidade', min_value=0, value=0,
+                        quantity_implantacao = st.number_input(f'{service} (Quantidade)', min_value=0, value=0,
                                                               key=key_q)
                         edited_implantacao_quantity[service] = quantity_implantacao
 
@@ -439,13 +444,13 @@ for category, services in updated_categories.items():
                                       key=key_s, disabled=True)
 
 # Nova linha para os dropdowns e botão
-col_vinculo, col_classificacao = st.columns([1, 1])
+col_classificacao, col_vinculo = st.columns([1, 1])
 
 with col_classificacao:
     Classificacao = st.selectbox("Considerar Qualidade", options=['Regular', 'Suficiente', 'Bom', 'Ótimo'], index=2)
 
 with col_vinculo:
-    Vinculo = st.selectbox("Considerar Vínculo e Acompanhamento Territorial", options=['Regular', 'Suficiente', 'Bom', 'Ótimo'], index=2)
+    Vinculo = st.selectbox("Vínculo e Acompanhamento Territorial", options=['Regular', 'Suficiente', 'Bom', 'Ótimo'], index=2)
 
 calcular_button = st.button('Calcular', use_container_width=True)
 
