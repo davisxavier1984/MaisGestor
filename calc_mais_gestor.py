@@ -1,5 +1,4 @@
 #=============================================== PARTE 1 ===============================================
-import locale
 import streamlit as st
 import requests
 import json
@@ -222,12 +221,6 @@ div[data-testid="stVerticalBlock"] > div:last-child {
 
 def format_currency(value: float | str) -> str:
     """Formata um número como moeda brasileira (R$)."""
-    # Configura o locale para o padrão brasileiro
-    try:
-        locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
-    except locale.Error:
-        locale.setlocale(locale.LC_ALL, 'C')  # Usa um fallback seguro
-
 
     if value == 'Sem cálculo':
         return value
@@ -241,8 +234,8 @@ def format_currency(value: float | str) -> str:
         except ValueError:
             return "Valor inválido"
 
-    # Formata o valor como moeda brasileira
-    return locale.currency(value, grouping=True, symbol=True)
+    # Formata o valor como moeda, usando f-string
+    return f"R$ {value:,.2f}".replace(",", "@").replace(".", ",").replace("@", ".")
 
 def get_estrato(populacao: int) -> str:
     """Retorna o estrato com base na população."""
@@ -1142,7 +1135,7 @@ if calcular_button:
             df = pd.DataFrame(tabela_dados)
 
             # Formatação condicional e remove índice
-            st.markdown(df.style.applymap(lambda x: f"background-color: {cores_cenarios.get(cenario, '')};" if x == cenario else '', subset=['Componente'])
+            st.markdown(df.style.map(lambda x: f"background-color: {cores_cenarios.get(cenario, '')};" if x == cenario else '', subset=['Componente'])
                       .format({'Valor': '{:}'})
                       .set_table_styles([
                           {'selector': 'th', 'props': [('background-color', cor_cenario), ('color', 'white'), ('text-align', 'center'), ('border', '1px solid black'), ('font-weight', 'bold')]},
@@ -1391,7 +1384,7 @@ if calcular_button:
                 return ''
 
         styled_df = df_comparacao.style.apply(style_rows, axis=1) \
-            .applymap(style_diferenca, subset=['Diferença Mensal']) \
+            .map(style_diferenca, subset=['Diferença Mensal']) \
             .format({'Valor Total Atual': '{:}',
                      'Valor Total do Cenário': '{:}',
                      'Diferença Mensal': '{:}'})
