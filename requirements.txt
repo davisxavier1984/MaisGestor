@@ -1,4 +1,1 @@
 pyUFbr
-locales
-language-pack-pt
-
