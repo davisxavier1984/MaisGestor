@@ -1,5 +1,5 @@
 #=============================================== PARTE 1 ===============================================
-
+import locale
 import streamlit as st
 import requests
 import json
@@ -221,12 +221,24 @@ div[data-testid="stVerticalBlock"] > div:last-child {
 """
 
 def format_currency(value: float | str) -> str:
-    """Formata um número como moeda brasileira."""
+    """Formata um número como moeda brasileira (R$)."""
+    # Configura o locale para o padrão brasileiro
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+
     if value == 'Sem cálculo':
         return value
+
+    # Converte a string para float, se necessário
     if isinstance(value, str):
-        value = float(value.replace('R$ ', '').replace('.', '').replace(',', '.'))
-    return "R$ {:,.2f}".format(value).replace(",", "v").replace(".", ",").replace("v", ".")
+        try:
+            # Remove "R$" e espaços, e substitui vírgulas por pontos
+            value = value.replace('R$', '').strip().replace('.', '').replace(',', '.')
+            value = float(value)
+        except ValueError:
+            return "Valor inválido"
+
+    # Formata o valor como moeda brasileira
+    return locale.currency(value, grouping=True, symbol=True)
 
 def get_estrato(populacao: int) -> str:
     """Retorna o estrato com base na população."""
@@ -460,6 +472,12 @@ with col_vinculo:
 calcular_button = st.button('Calcular', use_container_width=True)
 
 
+
+
+
+
+
+
 #=============================================== PARTE 4 ===============================================
 
 # Carregando dados do config.json (data.json e api_data já foram carregados anteriormente)
@@ -488,19 +506,27 @@ if calcular_button:
             fixed_table: list[list[str | int | float]] = []
 
             # Construindo a tabela do componente fixo
-            for service in ["eSF", "eAP 30h", "eAP 20h"]:
+            for service in ["eSF", "eAP 30h", "eAP 20h", "eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:  # Incluindo eMulti aqui
                 quantity = selected_services.get(service, 0)
                 if quantity > 0:
-                    # Buscar valor editado, senão buscar no fixed_component_values com base no estrato
+                    # Buscar valor editado, senão buscar no fixed_component_values (para eSF e eAP) ou data (para eMulti)
                     if service in edited_values:
                         valor = edited_values[service]
-                    else:
+                    elif service in ["eSF", "eAP 30h", "eAP 20h"]:
                         populacao = st.session_state.get('populacao', 0)
                         estrato = get_estrato(populacao)
                         if estrato in fixed_component_values:
                             valor = float(fixed_component_values[estrato][service].replace('R$ ', '').replace('.', '').replace(',', '.'))
                         else:
                             valor = 0
+                    elif service in ["eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:  # Tratamento para eMulti
+                        try:
+                            valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        except (ValueError, KeyError):
+                            st.error(f"Valor inválido para {service} no config.json.")
+                            valor = 0
+                    else:
+                        valor = 0
 
                     total_value = valor * quantity
                     fixed_table.append([service, format_currency(valor), quantity, format_currency(total_value)])
@@ -622,7 +648,7 @@ if calcular_button:
             st.table(quality_df)
 
             # IV - COMPONENTE PARA IMPLANTAÇÃO E MANUTENÇÃO DE PROGRAMAS, SERVIÇOS, PROFISSIONAIS E OUTRAS COMPOSIÇÕES DE EQUIPES QUE ATUAM NA APS
-            st.subheader("IV - Componente para Ações Estratégicas")
+            st.subheader("IV - Componente para Implantação e Manutenção de Programas, Serviços, Profissionais e Outras Composições de Equipes")
             implantacao_manutencao_table: list[list[str | int | float]] = []
 
             # Todos os serviços que não estão em quality_values, têm valor em data e *não* são da Saúde Bucal
@@ -720,17 +746,654 @@ if calcular_button:
 
             # CÁLCULO DO TOTAL GERAL
             total_geral = total_fixed_value + total_vinculo_value + total_quality_value + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita
+            
+            # CÁLCULO DO INCENTIVO FINANCEIRO DA APS - ESF E EAP
+            total_incentivo_aps = total_fixed_value + total_quality_value + total_vinculo_value
+            
+            # Adicionar linhas de implantação ao total do incentivo financeiro da APS
+            for service in ["eSF", "eAP 30h", "eAP 20h"]:
+                if service in implantacao_values and selected_services.get(service, 0) > 0:
+                    if service in edited_implantacao_values:
+                        valor_implantacao = edited_implantacao_values[service]
+                    else:
+                        valor_implantacao = float(implantacao_values.get(service, "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
 
-            # EXIBIÇÃO DO TOTAL GERAL
-            st.subheader("Total Geral")
-            total_geral_df = pd.DataFrame({
-                'Descrição': ['Total Geral'],
-                'Valor': [format_currency(total_geral)]
-            })
-            st.table(total_geral_df)
+                    if service in edited_implantacao_quantity:
+                        quantity_implantacao = edited_implantacao_quantity[service]
+                    else:
+                        quantity_implantacao = 0
+
+                    total_incentivo_aps += valor_implantacao * quantity_implantacao
+
+            # CÁLCULO DO INCENTIVO FINANCEIRO DA APS - EMULTI
+            total_incentivo_emulti = 0
+            for service in ["eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:
+                if selected_services.get(service, 0) > 0:
+                    # Custeio mensal
+                    if service in edited_values:
+                        valor_custeio = edited_values[service]
+                    else:
+                        try:
+                            valor_custeio = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        except (ValueError, KeyError):
+                            valor_custeio = 0
+
+                    # Qualidade
+                    if service in quality_values:
+                        if service in edited_values:
+                            valor_qualidade = edited_values[service]
+                        else:
+                            valor_qualidade = quality_values[service][Classificacao]
+                    else:
+                        valor_qualidade = 0
+
+                    # Implantação
+                    if service in edited_implantacao_values:
+                        valor_implantacao = edited_implantacao_values[service]
+                    else:
+                        if service == "eMULTI Ampl.":
+                            valor_implantacao = float(implantacao_values.get("eMulti Ampliada", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        elif service == "eMULTI Compl.":
+                            valor_implantacao = float(implantacao_values.get("eMulti Complementar", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        elif service == "eMULTI Estrat.":
+                            valor_implantacao = float(implantacao_values.get("eMulti Estratégica", "R$ 0,00").replace('R$ ', '').replace('.', '').replace(',', '.'))
+                        else:
+                            valor_implantacao = 0
+                    
+                    if service in edited_implantacao_quantity:
+                        quantity_implantacao = edited_implantacao_quantity[service]
+                    else:
+                        quantity_implantacao = 0
+
+                    total_incentivo_emulti += (valor_custeio + valor_qualidade + (valor_implantacao * quantity_implantacao)) * selected_services.get(service, 0)
+
+            # TABELA FINAL COM TOOLTIPS
+            tabela_final_data = [
+                {
+                    "Ação Detalhada": "Incentivo financeiro da APS – equipes de Saúde da Família - eSF e equipes de Atenção Primária - eAP",
+                    "Valor": format_currency(total_incentivo_aps),
+                    "Descrição": "Consiste no somatório dos componentes fixo, qualidade e vínculo e acompanhamento territorial, bem como incentivo de implantação para equipes implantadas a partir da parcela 05/2024 (CNES março)."
+                },
+                {
+                    "Ação Detalhada": "Incentivo financeiro da APS – equipes Multiprofissionais - eMulti",
+                    "Valor": format_currency(total_incentivo_emulti),
+                    "Descrição": "Consiste no somatório dos componentes de custeio mensal e ao componente de qualidade das equipes Multiprofissionais (eMulti), bem como incentivo de implantação para equipes implantadas a partir da parcela 05/2024 (CNES março)."
+                },
+                {
+                    "Ação Detalhada": "Incentivo financeiro da APS – Demais programas, serviços e equipes da Atenção Primária à Saúde",
+                    "Valor": format_currency(total_implantacao_manutencao_value),
+                    "Descrição": "Consiste no custeio de programas, serviços, profissionais e outras composições de equipe que atuam na APS, quais sejam: I - das equipes de Consultório na Rua - eCR; II - das Unidades Básicas de Saúde Fluvial - UBSF; III - das equipes de Saúde da Família Ribeirinha - eSFR; IV - das equipes de Atenção Primária Prisional - eAPP; V - para o ente federativo responsável pela gestão das ações de atenção integral à saúde dos adolescentes em situação de privação de liberdade; VI - do incentivo aos municípios com equipes de saúde integradas a programas de residência uniprofissional ou multiprofissional na Atenção Primária à Saúde; VII - do Programa Saúde na Escola - PSE; VIII - do incentivo financeiro federal de custeio para implementação de ações de atividade física no âmbito da APS - IAF; IX - dos profissionais microscopistas; X - da Estratégia de Agentes Comunitários de Saúde - ACS; e XI - de outros programas, serviços, profissionais e composições de equipe que venham a ser instituídos por meio de ato normativo específico do Ministério da Saúde."
+                },
+                {
+                    "Ação Detalhada": "Incentivo financeiro da APS – Componente per capita de base populacional",
+                    "Valor": format_currency(total_per_capita),
+                    "Descrição": "Consiste no repasse de recursos aos entes federativos, com base em critério populacional de acordo com Censo 2022 para municípios com estabilidade ou ganho populacional, de acordo com o valor per capita de 5,95 conforme Portaria 3732/024 - Anexo I."
+                },
+                {
+                    "Ação Detalhada": "Incentivo financeiro da APS – Manutenção de pagamento de valor nominal com base em exercício anterior",
+                    "Valor": "R$ 0,00",  # Valor não calculado, pois não há uma lógica definida no código atual
+                    "Descrição": "Consiste no repasse de recursos aos entes subnacionais que tiveram perda populacional no Censo 2022, com a manutenção do valor nominal repassado no ano anterior, conforme Portaria nº 3732/2024 - Anexo II."
+                },
+                {
+                    "Ação Detalhada": "Incentivo Compensatório de Transição",
+                    "Valor": "R$ 0,00",  # Valor não calculado, pois não há uma lógica definida no código atual
+                    "Descrição": "Consiste no repasse do incentivo compensatório de transição aos entes federativos que apresentaram redução dos valores dos componentes recebidos no âmbito da Atenção Primária à Saúde (APS) em comparação com os valores nominais recebidos nas últimas doze parcelas anteriores a vigência da nova metodologia de cofinanciamento. Os entes federativos farão jus, até saírem da situação de perda, a um valor adicional mensal de compensação, correspondente ao valor da redução acrescido de 10%, desde que seja mantido o quantitativo equivalente de eSF e eAP."
+                },
+                {
+                    "Ação Detalhada": "Incentivo financeiro da APS – Atenção à Saúde Bucal",
+                    "Valor": format_currency(total_saude_bucal_value),
+                    "Descrição": "Consiste no somatório do custeio mensal, e qualidade das Equipes de Saúde Bucal, à implantação das Unidades Odontológicas Móveis (UOM), ao custeio e ao componente de qualidade de Centros de Especialidades Odontológicas (CEO), ao custeio de Laboratórios Regionais de Prótese Dentária (LRPD), à implantação, ao custeio e ao componente de qualidade de Serviços de Especialidades em Saúde Bucal (Sesb)."
+                },
+                {
+                    "Ação Detalhada": "Agentes Comunitários de Saúde",
+                    "Valor": "R$ 0,00",  # Valor não calculado, pois não há uma lógica definida no código atual
+                    "Descrição": "Consiste no custeio mensal aos Agentes Comunitários de Saúde"
+                },
+            ]
+
+            tabela_final_df = pd.DataFrame(tabela_final_data)
+
+            # Aqui estava o erro, a coluna já havia sido removida anteriormente
+            # tabela_final_df_sem_descricao = tabela_final_df.drop(columns=["Descrição"])
+
+            # Adicionar CSS para os tooltips, largura da coluna e alinhamento à direita
+            st.markdown(
+                """
+                <style>
+                .tooltip {
+                  position: relative;
+                  display: inline-block;
+                  border-bottom: 1px dotted black;
+                }
+
+                .tooltip .tooltiptext {
+                  visibility: hidden;
+                  width: 300px;
+                  background-color: black;
+                  color: #fff;
+                  text-align: center;
+                  border-radius: 6px;
+                  padding: 5px 0;
+                  position: absolute;
+                  z-index: 1;
+                  top: 150%;
+                  left: 50%;
+                  margin-left: -150px;
+                }
+
+                .tooltip .tooltiptext::after {
+                  content: "";
+                  position: absolute;
+                  bottom: 100%;
+                  left: 50%;
+                  margin-left: -5px;
+                  border-width: 5px;
+                  border-style: solid;
+                  border-color: transparent transparent black transparent;
+                }
+
+                .tooltip:hover .tooltiptext {
+                  visibility: visible;
+                }
+
+                /* Estilo para a tabela */
+                table {
+                    width: 80%; /* Ajuste a largura da tabela conforme necessário */
+                    margin: 0 auto; /* Centraliza a tabela */
+                    border-collapse: collapse;
+                }
+
+                th, td {
+                    text-align: left;
+                    padding: 8px;
+                    border: 1px solid #ddd; /* Adiciona bordas às células */
+                }
+
+                th:nth-child(2), td:nth-child(2) {
+                    width: 30%; /* Ajuste a largura da coluna Valor */
+                    text-align: right; /* Alinha os valores à direita */
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Função para gerar a tabela HTML com tooltips
+            def generate_html_table_with_tooltips(df, tooltip_column):
+                html = "<table>"
+                html += "<thead><tr>"
+                for col in df.columns:
+                    html += f"<th>{col}</th>"
+                html += "</tr></thead>"
+                html += "<tbody>"
+                for index, row in df.iterrows():
+                    html += "<tr>"
+                    for col in df.columns:
+                        if col == "Ação Detalhada":
+                            html += f"<td><div class='tooltip'>{row[col]}<span class='tooltiptext'>{tooltip_column.iloc[index]}</span></div></td>"
+                        else:
+                            html += f"<td>{row[col]}</td>"
+                    html += "</tr>"
+                html += "</tbody></table>"
+                return html
+
+            # Gerar a tabela HTML com tooltips
+            html_table = generate_html_table_with_tooltips(tabela_final_df.drop(columns=["Descrição"]), tabela_final_df["Descrição"])
+
+            # EXIBIÇÃO DA TABELA FINAL COM TOOLTIPS
+            st.subheader("Resumo dos Incentivos Financeiros da APS")
+            st.markdown(html_table, unsafe_allow_html=True)
 
             # Destaque para o valor total geral
             st.markdown(f"<h3 style='text-align: center; color: blue;'>Total Geral: {format_currency(total_geral)}</h3>", unsafe_allow_html=True)
+
+    else:
+        st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
+
+
+
+
+
+
+
+
+
+
+
+
+#=============================================== PARTE 7 ===============================================
+
+def gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, selected_services, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita, total_fixed_value):
+    """
+    Gera um relatório detalhado dos valores para cada cenário de desempenho e constrói um DataFrame
+    para o quadro de comparação (PARTE 6) iterando sobre as linhas das tabelas geradas.
+
+    **A exibição dos quadros do relatório detalhado foi movida para fora desta função,
+    para que a PARTE 7 apenas gere o DataFrame e a PARTE 6 exiba a tabela.**
+
+    Args:
+        total_geral: Valor total geral calculado (usado como referência para o modelo anterior).
+        vinculo_values: Dicionário com os valores de vínculo e acompanhamento por qualidade.
+        quality_values: Dicionário com os valores de qualidade por classificação.
+        selected_services: Dicionário com os serviços selecionados e suas quantidades.
+        total_implantacao_manutencao_value: Valor total de implantação e manutenção.
+        total_saude_bucal_value: Valor total de saúde bucal.
+        total_per_capita: Valor total per capita.
+        total_fixed_value: Valor total fixo.
+
+    Returns:
+        pd.DataFrame: DataFrame para o quadro de comparação (PARTE 6).
+    """
+
+    cenarios = ['Regular', 'Suficiente', 'Bom', 'Ótimo']
+
+    # Valor base (modelo anterior) - Total geral anterior, calculado na PARTE 4
+    valor_base = total_geral
+
+    # DataFrame para o quadro de comparação (PARTE 6)
+    dados_comparacao = []
+
+    for cenario in cenarios:
+        # Zera os valores para cada cenário
+        valor_vinculo = 0
+        valor_qualidade = 0
+        valor_emulti = 0
+
+        # Vínculo e Acompanhamento
+        for service in vinculo_values:
+            if service in selected_services:
+                valor_vinculo += vinculo_values[service].get(cenario, 0) * selected_services.get(service, 0)
+
+        # Qualidade
+        for service in quality_values:
+            if service in selected_services:
+                valor_qualidade += quality_values[service].get(cenario, 0) * selected_services.get(service, 0)
+
+        # eMulti
+        for service in ["eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:
+            if selected_services.get(service, 0) > 0:
+                valor_emulti += quality_values.get(service, {}).get(cenario, 0) * selected_services.get(service, 0)
+
+        # Calcula o valor total do cenário atual
+        valor_cenario = total_fixed_value + valor_vinculo + valor_qualidade + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita + valor_emulti
+
+        # Diferença e aumento percentual
+        diferenca = valor_cenario - valor_base
+        aumento_percentual = ((valor_cenario - valor_base) / valor_base) * 100 if valor_base != 0 else 0
+
+        # Adiciona dados para o quadro de comparação (PARTE 6)
+        dados_comparacao.append({
+            'Valor Total Atual': format_currency(valor_base),
+            'Desempenho': cenario.upper(),  # Convertido para maiúsculas
+            'Valor Total do Cenário': format_currency(valor_cenario),
+            'Diferença Mensal': format_currency(diferenca),
+            'Variação %': f"{aumento_percentual:.0f}%"
+        })
+
+    # Cria DataFrame para o quadro de comparação (PARTE 6)
+    df_comparacao = pd.DataFrame(dados_comparacao)
+
+    return df_comparacao
+
+# Chamando a função e exibindo o resultado
+if calcular_button:
+    if st.session_state['dados']:
+        # ... (Todos os cálculos das partes anteriores permanecem inalterados)
+
+        # Gerando o DataFrame para a PARTE 6
+        df_comparacao = gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, selected_services, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita, total_fixed_value)
+
+        # Exibindo o Relatório Detalhado por Cenário (Quadros) - (Código novo)
+        st.subheader("Relatório Detalhado por Cenário")
+        cenarios = ['Regular', 'Suficiente', 'Bom', 'Ótimo']
+        cores_cenarios = {
+            'Regular': '#8B0000',
+            'Suficiente': '#FFA500',
+            'Bom': '#006400',
+            'Ótimo': '#000080'
+        }
+
+        # Definindo valor_base (CORREÇÃO AQUI)
+        valor_base = total_geral
+
+        for cenario in cenarios:
+            cor_cenario = cores_cenarios.get(cenario)
+            st.markdown(f"<h3 style='color:{cor_cenario}'>Cenário: {cenario}</h3>", unsafe_allow_html=True)
+
+            # Zera os valores para cada cenário
+            valor_vinculo = 0
+            valor_qualidade = 0
+            valor_emulti = 0
+
+            # Vínculo e Acompanhamento
+            for service in vinculo_values:
+                if service in selected_services:
+                    valor_vinculo += vinculo_values[service].get(cenario, 0) * selected_services.get(service, 0)
+
+            # Qualidade
+            for service in quality_values:
+                if service in selected_services:
+                    valor_qualidade += quality_values[service].get(cenario, 0) * selected_services.get(service, 0)
+
+            # eMulti
+            for service in ["eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:
+                if selected_services.get(service, 0) > 0:
+                    valor_emulti += quality_values.get(service, {}).get(cenario, 0) * selected_services.get(service, 0)
+
+            # Calcula o valor total do cenário atual
+            valor_cenario = total_fixed_value + valor_vinculo + valor_qualidade + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita + valor_emulti
+
+            # Diferença e aumento percentual
+            diferenca = valor_cenario - valor_base
+            aumento_percentual = ((valor_cenario - valor_base) / valor_base) * 100 if valor_base != 0 else 0
+
+            # Cria a tabela para o cenário atual
+            tabela_dados = []
+            tabela_dados.append({
+                'Componente': 'Valor Base (Recebia na APS Mensalmente)',
+                'Valor': format_currency(valor_base)
+            })
+            tabela_dados.append({
+                'Componente': 'Valor Fixo',
+                'Valor': format_currency(total_fixed_value)
+            })
+            tabela_dados.append({
+                'Componente': 'Vínculo e Acompanhamento',
+                'Valor': format_currency(valor_vinculo)
+            })
+            tabela_dados.append({
+                'Componente': 'Qualidade',
+                'Valor': format_currency(valor_qualidade)
+            })
+            tabela_dados.append({
+                'Componente': 'eMulti',
+                'Valor': format_currency(valor_emulti)
+            })
+            tabela_dados.append({
+                'Componente': 'Implantação/Manutenção',
+                'Valor': format_currency(total_implantacao_manutencao_value)
+            })
+            tabela_dados.append({
+                'Componente': 'Saúde Bucal',
+                'Valor': format_currency(total_saude_bucal_value)
+            })
+            tabela_dados.append({
+                'Componente': 'Per Capita',
+                'Valor': format_currency(total_per_capita)
+            })
+            tabela_dados.append({
+                'Componente': f"<span style='font-weight: bold; color: {cor_cenario}'>Total do Cenário ({cenario})</span>",
+                'Valor': f"<span style='font-weight: bold; color: {cor_cenario}'>{format_currency(valor_cenario)}</span>"
+            })
+            tabela_dados.append({
+                'Componente': 'Diferença (Aumentou Mensal)',
+                'Valor': format_currency(diferenca)
+            })
+            tabela_dados.append({
+                'Componente': 'Aumento Percentual',
+                'Valor': f"{aumento_percentual:.0f}%"
+            })
+
+            # Cria DataFrame e exibe a tabela
+            df = pd.DataFrame(tabela_dados)
+
+            # Formatação condicional e remove índice
+            st.markdown(df.style.applymap(lambda x: f"background-color: {cores_cenarios.get(cenario, '')};" if x == cenario else '', subset=['Componente'])
+                      .format({'Valor': '{:}'})
+                      .set_table_styles([
+                          {'selector': 'th', 'props': [('background-color', cor_cenario), ('color', 'white'), ('text-align', 'center'), ('border', '1px solid black'), ('font-weight', 'bold')]},
+                          {'selector': 'td', 'props': [('text-align', 'left'), ('border', '1px solid black')]},
+                          {'selector': 'td:nth-child(2)', 'props': [('text-align', 'right')]},
+                          {'selector': 'tr:last-child td', 'props': [('font-weight', 'bold')]},
+                          {'selector': '', 'props': [('border-collapse', 'collapse'), ('width', '80%'), ('margin', '0 auto')]},
+                          {'selector': '.col0', 'props': [('width', '450px')]}
+                      ])
+                      .hide(axis="index")
+                      .to_html(escape=False), unsafe_allow_html=True)
+            st.divider()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#=============================================== PARTE 5 ===============================================
+
+def gerar_analise_cenarios(total_incentivo_aps, total_incentivo_emulti, total_geral, vinculo_values, quality_values, selected_services, total_fixed_value, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita):
+    """
+    Gera o texto de análise dos cenários com base nos valores calculados.
+
+    Args:
+        total_incentivo_aps: Valor total do incentivo financeiro da APS para eSF e eAP.
+        total_incentivo_emulti: Valor total do incentivo financeiro da APS para eMulti.
+        total_geral: Valor total geral calculado.
+        vinculo_values: Dicionário com os valores de vínculo e acompanhamento por qualidade.
+        quality_values: Dicionário com os valores de qualidade por classificação.
+        selected_services: Dicionário com os serviços selecionados e suas quantidades.
+        total_fixed_value: Valor total do componente fixo.
+        total_implantacao_manutencao_value: Valor total de implantação e manutenção.
+        total_saude_bucal_value: Valor total de saúde bucal.
+        total_per_capita: Valor total per capita.
+
+    Returns:
+        str: Texto de análise dos cenários.
+    """
+
+    # Valores no modelo anterior (hipotético - você precisará ajustar com base em dados reais)
+    # Neste exemplo, estou considerando que o modelo anterior seria apenas o valor fixo + per capita
+    valor_modelo_anterior = total_fixed_value + total_per_capita
+
+    # Cenário de pior desempenho (Regular)
+    pior_desempenho_vinculo = sum(vinculo_values[service]['Regular'] * selected_services.get(service, 0) for service in vinculo_values if service in selected_services)
+    pior_desempenpenho_qualidade = sum(quality_values[service]['Regular'] * selected_services.get(service, 0) for service in quality_values if service in selected_services)
+
+    # Cenário eMulti Regular
+    pior_desempenho_emulti = 0
+    for service in ["eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:
+        if selected_services.get(service, 0) > 0:
+            if service in quality_values:
+                valor_qualidade = quality_values[service]['Regular']
+            else:
+                valor_qualidade = 0
+
+            pior_desempenho_emulti += valor_qualidade * selected_services.get(service, 0)
+
+    valor_pior_desempenho = total_fixed_value + pior_desempenho_vinculo + pior_desempenpenho_qualidade + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita + pior_desempenho_emulti
+
+    # Cenário de melhor desempenho (Ótimo)
+    melhor_desempenho_vinculo = sum(vinculo_values[service]['Ótimo'] * selected_services.get(service, 0) for service in vinculo_values if service in selected_services)
+    melhor_desempenho_qualidade = sum(quality_values[service]['Ótimo'] * selected_services.get(service, 0) for service in quality_values if service in selected_services)
+
+    # Cenário eMulti Ótimo
+    melhor_desempenho_emulti = 0
+    for service in ["eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:
+        if selected_services.get(service, 0) > 0:
+            if service in quality_values:
+                valor_qualidade = quality_values[service]['Ótimo']
+            else:
+                valor_qualidade = 0
+
+            melhor_desempenho_emulti += valor_qualidade * selected_services.get(service, 0)
+
+    valor_melhor_desempenho = total_fixed_value + melhor_desempenho_vinculo + melhor_desempenho_qualidade + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita + melhor_desempenho_emulti
+
+    # Diferença entre os cenários
+    diferenca = valor_melhor_desempenho - valor_pior_desempenho
+
+    # Porcentagem de aumento
+    porcentagem_aumento = ((valor_melhor_desempenho - valor_pior_desempenho) / valor_pior_desempenho) * 100 if valor_pior_desempenho != 0 else 0
+
+    # Texto da análise
+    texto_analise = f"""
+    <div style="text-align: justify; color: #2c3e50; font-size: 1.1rem">
+        <p>
+            <b style="font-size: 1.3rem; color: #008080">ANÁLISE DOS CENÁRIOS</b><br>
+            O quadro abaixo contém de forma consolidada mensalmente (a cada mês) uma comparação dos valores recebidos no modelo anterior e no cofinanciamento federal da APS. Nele, recomenda-se observar, especialmente se conforme o desempenho, o município tem <span style="color: #008000; font-weight: bold">aumento</span> ou <span style="color: #8B0000; font-weight: bold">redução</span> de repasses federais na APS. Valores negativos (com sinal de <span style="font-weight: bold">menos-</span>) representam diminuição do valor em relação ao modelo de financiamento anterior. No cenário de pior desempenho, <span style="color: #8B0000; font-weight: bold">“REGULAR”</span>, o município recebe o valor de <span style="color: #8B0000; font-weight: bold">{format_currency(valor_pior_desempenho)}</span> e no cenário de melhor desempenho, <span style="color: #008000; font-weight: bold">“ÓTIMO”</span>, o município recebe o valor de <span style="color: #008000; font-weight: bold">{format_currency(valor_melhor_desempenho)}</span>. A diferença de <span style="background-color: #FFFFE0; font-weight: bold">{format_currency(diferenca)}</span> <span style="font-weight: bold">MENSAL</span> está relacionada aos componentes de <span style="font-weight: bold">vínculo e acompanhamento e qualidade</span> que são os valores variáveis do cofinanciamento federal na APS. <span style="color: #008000; font-weight: bold">AUMENTO DE MAIS DE {porcentagem_aumento:.2f}%</span>, EQUIVALENTE A QUASE <span style="color: #008000; font-weight: bold">{format_currency(diferenca * 12)}</span> SOMENTE NESTE ITEM.
+        </p>
+    </div>
+    """
+
+    return texto_analise
+
+# Chamando a função e exibindo o resultado
+if calcular_button:
+    if st.session_state['dados']:
+        # ... (Todos os cálculos das partes anteriores permanecem inalterados)
+
+        # Gerando a análise dos cenários
+        texto_analise = gerar_analise_cenarios(total_incentivo_aps, total_incentivo_emulti, total_geral, vinculo_values, quality_values, selected_services, total_fixed_value, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita)
+
+        # Exibindo a análise dos cenários
+
+        st.markdown(texto_analise, unsafe_allow_html=True)
+
+    else:
+        st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        # ... (Código das partes anteriores)
+
+#=============================================== PARTE 6 ===============================================
+
+# Chamando a função e exibindo o resultado (modificado para usar o DataFrame da PARTE 7)
+if calcular_button:
+    if st.session_state['dados']:
+        # ... (Todos os cálculos das partes anteriores permanecem inalterados)
+
+        # Gerando o relatório de cenários (PARTE 7) e obtendo o DataFrame para o quadro de comparação
+        # df_comparacao = gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, selected_services, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita, total_fixed_value)
+
+        # Exibindo o quadro de comparação
+        st.subheader("Quadro de Comparação de Valores Conforme os Cenários de Qualificação de Desempenho da APS")
+
+        # CSS para a tabela
+        st.markdown(
+            """
+            <style>
+            .dataframe {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .dataframe th {
+                background-color: #4682B4; /* Azul médio */
+                color: white;
+                text-align: center;
+                padding: 8px;
+                border: 1px solid black;
+                font-weight: bold; /* Cabeçalhos em negrito */
+            }
+            .dataframe td {
+                text-align: center;
+                padding: 8px;
+                border: 1px solid black;
+                font-size: 1.05em; /* Tamanho da fonte ligeiramente maior */
+            }
+            .dataframe td:nth-child(1), .dataframe td:nth-child(3), .dataframe td:nth-child(4) {
+                font-weight: bold; /* Valores em negrito */
+            }
+            .dataframe td:nth-child(1), .dataframe td:nth-child(4) {
+                text-align: right;
+            }
+            /* Formatação condicional para a linha inteira baseada no desempenho */
+            .optimo {
+                background-color: #000080; /* Azul escuro */
+                color: white;
+            }
+            .bom {
+                background-color: #006400; /* Verde escuro */
+                color: white;
+            }
+            .suficiente {
+                background-color: #FFA500; /* Laranja */
+                color: black;
+            }
+            .regular {
+                background-color: #8B0000; /* Vermelho escuro */
+                color: white;
+            }
+            /* Cor para Diferença Mensal */
+            .positivo {
+                color: #008000; /* Verde para valores positivos */
+            }
+            .negativo {
+                color: #8B0000; /* Vermelho para valores negativos */
+            }
+            .st-ae { /* Ajusta a altura do header */
+                padding-top: 0px !important;
+                padding-bottom: 0px !important;
+            }
+            .st-bf { /* Ajusta a altura das linhas */
+                padding-top: 0px !important;
+                padding-bottom: 0px !important;
+            }
+            .st-bb { /* Ajusta a altura das linhas */
+                padding-top: 0px !important;
+                padding-bottom: 0px !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # Função para aplicar estilo em toda a linha
+        def style_rows(row):
+            if row['Desempenho'] == 'ÓTIMO':
+                return ['background-color: #000080; color: white'] * len(row)
+            elif row['Desempenho'] == 'BOM':
+                return ['background-color: #006400; color: white'] * len(row)
+            elif row['Desempenho'] == 'SUFICIENTE':
+                return ['background-color: #FFA500; color: black'] * len(row)
+            elif row['Desempenho'] == 'REGULAR':
+                return ['background-color: #8B0000; color: white'] * len(row)
+            else:
+                return [''] * len(row)
+        
+        # Função para aplicar cor na diferença mensal
+        def style_diferenca(val):
+            try:
+                # Verifica se é um número válido
+                num = float(val.replace('R$', '').replace('.', '').replace(',', '.').strip())
+                if num > 0:
+                    return 'color: #008000'  # Verde para positivo
+                elif num < 0:
+                    return 'color: #8B0000'  # Vermelho para negativo
+                else:
+                    return ''
+            except ValueError:
+                return ''
+
+        styled_df = df_comparacao.style.apply(style_rows, axis=1) \
+            .applymap(style_diferenca, subset=['Diferença Mensal']) \
+            .format({'Valor Total Atual': '{:}',
+                     'Valor Total do Cenário': '{:}',
+                     'Diferença Mensal': '{:}'})
+
+        st.dataframe(styled_df)
+
     else:
         st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
 
