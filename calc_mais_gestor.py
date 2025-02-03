@@ -223,7 +223,11 @@ div[data-testid="stVerticalBlock"] > div:last-child {
 def format_currency(value: float | str) -> str:
     """Formata um número como moeda brasileira (R$)."""
     # Configura o locale para o padrão brasileiro
-    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+    try:
+        locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+    except locale.Error:
+        locale.setlocale(locale.LC_ALL, 'C')  # Usa um fallback seguro
+
 
     if value == 'Sem cálculo':
         return value
