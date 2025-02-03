@@ -237,17 +237,20 @@ def format_currency(value: float | str) -> str:
     # Formata o valor como moeda, usando f-string
     return f"R$ {value:,.2f}".replace(",", "@").replace(".", ",").replace("@", ".")
 
-def get_estrato(populacao: int) -> str:
-    """Retorna o estrato com base na população."""
-    if populacao <= 20000:
-        return "1"
-    elif populacao <= 50000:
-        return "2"
-    elif populacao <= 100000:
-        return "3"
-    else:
-        return "4"
+def get_estrato(ied: str | None = None) -> str:
+    """
+    Retorna o estrato com base no IED (dsFaixaIndiceEquidadeEsfEap).
+    Se o IED for inválido ou ausente, exibe um erro e interrompe o cálculo.
+    """
+    if ied is not None and isinstance(ied, str) and ied.startswith("ESTRATO "):
+        try:
+            return ied[-1]
+        except IndexError:
+            st.error(f"Erro ao extrair estrato do IED: {ied}.")
+            st.stop()
 
+    st.error("IED (dsFaixaIndiceEquidadeEsfEap) ausente ou inválido. Não é possível determinar o estrato.")
+    st.stop()
 
 # Aplicar CSS
 st.markdown(CSS, unsafe_allow_html=True)
@@ -341,7 +344,7 @@ for category, services in updated_categories.items():
                     initial_value = "R$ 0,00"
                     if service in ["eSF", "eAP 30h", "eAP 20h"]:
                         populacao = st.session_state.get('populacao', 0)
-                        estrato = get_estrato(populacao)
+                        estrato = get_estrato(st.session_state.ied)
                         if estrato in fixed_component_values:
                             initial_value = fixed_component_values[estrato][service]
                     else:
@@ -473,8 +476,6 @@ calcular_button = st.button('Calcular', use_container_width=True)
 
 
 
-
-
 #=============================================== PARTE 4 ===============================================
 
 # Carregando dados do config.json (data.json e api_data já foram carregados anteriormente)
@@ -509,13 +510,18 @@ if calcular_button:
                     # Buscar valor editado, senão buscar no fixed_component_values (para eSF e eAP) ou data (para eMulti)
                     if service in edited_values:
                         valor = edited_values[service]
+                        st.write(ied)
                     elif service in ["eSF", "eAP 30h", "eAP 20h"]:
-                        populacao = st.session_state.get('populacao', 0)
-                        estrato = get_estrato(populacao)
+                        # Obter o IED da session_state - foi definido na PARTE 1
+                        ied = st.session_state.get('ied', None)
+
+                        # Passar SOMENTE o IED para a função get_estrato
+                        estrato = get_estrato(ied) # A função get_estrato (PARTE 2) agora lida com IED ausente/inválido
+
                         if estrato in fixed_component_values:
                             valor = float(fixed_component_values[estrato][service].replace('R$ ', '').replace('.', '').replace(',', '.'))
                         else:
-                            valor = 0
+                            valor = 0 # Teoricamente, o código nunca deve chegar aqui, pois get_estrato vai interromper a execução
                     elif service in ["eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:  # Tratamento para eMulti
                         try:
                             valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
@@ -957,7 +963,6 @@ if calcular_button:
 
 
 
-
 #=============================================== PARTE 7 ===============================================
 
 def gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, selected_services, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita, total_fixed_value):
@@ -1016,7 +1021,7 @@ def gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, select
 
         # Diferença e aumento percentual
         diferenca = valor_cenario - valor_base
-        aumento_percentual = ((valor_cenario - valor_base) / valor_base) * 100 if valor_base != 0 else 0
+        aumento_percentual = (diferenca / valor_base) * 100 if valor_base != 0 else 0.00
 
         # Adiciona dados para o quadro de comparação (PARTE 6)
         dados_comparacao.append({
@@ -1024,7 +1029,7 @@ def gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, select
             'Desempenho': cenario.upper(),  # Convertido para maiúsculas
             'Valor Total do Cenário': format_currency(valor_cenario),
             'Diferença Mensal': format_currency(diferenca),
-            'Variação %': f"{aumento_percentual:.0f}%"
+            'Variação %': aumento_percentual
         })
 
     # Cria DataFrame para o quadro de comparação (PARTE 6)
@@ -1160,9 +1165,6 @@ if calcular_button:
 
 
 
-
-
-
 #=============================================== PARTE 5 ===============================================
 
 def gerar_analise_cenarios(total_incentivo_aps, total_incentivo_emulti, total_geral, vinculo_values, quality_values, selected_services, total_fixed_value, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita):
@@ -1255,24 +1257,15 @@ if calcular_button:
 
     else:
         st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        # ... (Código das partes anteriores)
+
+
+
+
+
+
+
+
+
 
 #=============================================== PARTE 6 ===============================================
 
@@ -1282,12 +1275,12 @@ if calcular_button:
         # ... (Todos os cálculos das partes anteriores permanecem inalterados)
 
         # Gerando o relatório de cenários (PARTE 7) e obtendo o DataFrame para o quadro de comparação
-        # df_comparacao = gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, selected_services, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita, total_fixed_value)
+        df_comparacao = gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, selected_services, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita, total_fixed_value)
 
         # Exibindo o quadro de comparação
         st.subheader("Quadro de Comparação de Valores Conforme os Cenários de Qualificação de Desempenho da APS")
 
-        # CSS para a tabela
+        # CSS para a tabela (MODIFICADO PARA LETRAS BRANCAS EM NEGRITO)
         st.markdown(
             """
             <style>
@@ -1297,47 +1290,38 @@ if calcular_button:
             }
             .dataframe th {
                 background-color: #4682B4; /* Azul médio */
-                color: white;
+                color: white; /* Cabeçalhos em branco */
                 text-align: center;
                 padding: 8px;
                 border: 1px solid black;
-                font-weight: bold; /* Cabeçalhos em negrito */
+                font-weight: bold;
             }
             .dataframe td {
                 text-align: center;
                 padding: 8px;
                 border: 1px solid black;
-                font-size: 1.05em; /* Tamanho da fonte ligeiramente maior */
+                font-size: 1.05em;
+                color: white; /* Todas as células em branco */
+                font-weight: bold; /* Todas as células em negrito */
             }
             .dataframe td:nth-child(1), .dataframe td:nth-child(3), .dataframe td:nth-child(4) {
-                font-weight: bold; /* Valores em negrito */
+                font-weight: bold;
             }
-            .dataframe td:nth-child(1), .dataframe td:nth-child(4) {
-                text-align: right;
+            .dataframe td:nth-child(1), .dataframe td:nth-child(4), .dataframe td:nth-child(5) {
+                text-align: right; /* Alinha as colunas específicas à direita */
             }
             /* Formatação condicional para a linha inteira baseada no desempenho */
             .optimo {
                 background-color: #000080; /* Azul escuro */
-                color: white;
             }
             .bom {
                 background-color: #006400; /* Verde escuro */
-                color: white;
             }
             .suficiente {
                 background-color: #FFA500; /* Laranja */
-                color: black;
             }
             .regular {
                 background-color: #8B0000; /* Vermelho escuro */
-                color: white;
-            }
-            /* Cor para Diferença Mensal */
-            .positivo {
-                color: #008000; /* Verde para valores positivos */
-            }
-            .negativo {
-                color: #8B0000; /* Vermelho para valores negativos */
             }
             .st-ae { /* Ajusta a altura do header */
                 padding-top: 0px !important;
@@ -1356,43 +1340,42 @@ if calcular_button:
             unsafe_allow_html=True
         )
 
-        # Função para aplicar estilo em toda a linha
+        # Função para aplicar estilo em toda a linha (MANTIDA INALTERADA)
         def style_rows(row):
             if row['Desempenho'] == 'ÓTIMO':
-                return ['background-color: #000080; color: white'] * len(row)
+                return ['background-color: #000080; color: white'] * len(row)  # Azul escuro
             elif row['Desempenho'] == 'BOM':
-                return ['background-color: #006400; color: white'] * len(row)
+                return ['background-color: #006400; color: white'] * len(row)  # Verde escuro
             elif row['Desempenho'] == 'SUFICIENTE':
-                return ['background-color: #FFA500; color: black'] * len(row)
+                return ['background-color: #FFA500; color: white'] * len(row)  # Laranja
             elif row['Desempenho'] == 'REGULAR':
-                return ['background-color: #8B0000; color: white'] * len(row)
+                return ['background-color: #8B0000; color: white'] * len(row)  # Vermelho escuro
             else:
                 return [''] * len(row)
-        
-        # Função para aplicar cor na diferença mensal
-        def style_diferenca(val):
-            try:
-                # Verifica se é um número válido
-                num = float(val.replace('R$', '').replace('.', '').replace(',', '.').strip())
-                if num > 0:
-                    return 'color: #008000'  # Verde para positivo
-                elif num < 0:
-                    return 'color: #8B0000'  # Vermelho para negativo
-                else:
-                    return ''
-            except ValueError:
-                return ''
 
+        # Função para formatar a Variação %
+        def format_variacao_porcentagem(val):
+            """Formata a variação percentual com duas casas decimais e símbolo de porcentagem."""
+            try:
+                if isinstance(val, str):
+                    # Se for string, tenta converter para float
+                    num = float(val.replace('%', '').strip())
+                elif isinstance(val, (int, float)):
+                    num = val
+                else:
+                    return val
+                return f"{num:.2f}%"
+            except ValueError:
+                return val  # Retorna o valor original se houver erro na conversão
+
+        # Aplicar estilos ao DataFrame (MODIFICADO PARA TRATAR ERROS DE FORMATAÇÃO)
         styled_df = df_comparacao.style.apply(style_rows, axis=1) \
-            .map(style_diferenca, subset=['Diferença Mensal']) \
             .format({'Valor Total Atual': '{:}',
                      'Valor Total do Cenário': '{:}',
-                     'Diferença Mensal': '{:}'})
+                     'Diferença Mensal': '{:}',
+                     'Variação %': format_variacao_porcentagem}) # Usando a função de formatação
 
         st.dataframe(styled_df)
 
     else:
         st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
-
-def main():
-    pass
