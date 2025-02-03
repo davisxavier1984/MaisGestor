@@ -1,2 +1,4 @@
 pyUFbr
-locale
+locales
+language-pack-pt
+
