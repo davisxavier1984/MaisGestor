@@ -694,7 +694,7 @@ if calcular_button:
 
             st.table(implantacao_manutencao_df)
 
-            # V - COMPONENTE PARA ATENÇÃO À SAÚDE BUCAL
+              # V - COMPONENTE PARA ATENÇÃO À SAÚDE BUCAL
             st.subheader("V - Componente para Atenção à Saúde Bucal")
             saude_bucal_table: list[list[str | int | float]] = []
 
@@ -704,21 +704,26 @@ if calcular_button:
             for service in saude_bucal_services:
                 quantity = selected_services.get(service, 0)
                 if quantity > 0:
-                    # Buscar valor editado, senão buscar valor unitário de quality_values ou config.json
+                    # Buscar valor editado, senão buscar valor unitário de config.json (data)
                     if service in edited_values:
                         valor = edited_values[service]
-                    elif service in quality_values:
-                        valor = float(quality_values[service][Classificacao])
+                        print(f"Valor editado para {service}: {valor}") # DEBUG
                     else:
                         try:
+                            # Usar apenas o valor de data[service]['valor']
                             valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
-                        except:
+                            print(f"Valor do config.json para {service}: {valor}") # DEBUG
+                        except (ValueError, KeyError):
+                            st.error(f"Valor inválido para {service} no config.json.")
                             valor = 0
 
                     total = valor * quantity
                     saude_bucal_table.append([service, quantity, format_currency(valor), format_currency(total)])
 
             saude_bucal_df = pd.DataFrame(saude_bucal_table, columns=['Serviço', 'Quantidade', 'Valor Unitário', 'Valor Total'])
+            
+            # Preencher valores vazios na coluna 'Quantidade' com 0
+            saude_bucal_df['Quantidade'] = saude_bucal_df['Quantidade'].replace('', 0)
 
             total_saude_bucal_value = sum(
                 float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
