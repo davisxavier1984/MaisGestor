@@ -189,6 +189,8 @@ if 'valor_acs' not in st.session_state:
     st.session_state['valor_acs'] = 0.0
 if 'valor_estrategicas' not in st.session_state:
     st.session_state['valor_estrategicas'] = 0.0
+if 'ied' not in st.session_state:
+    st.session_state['ied'] = 0.0
 if 'calculo_realizado' not in st.session_state:
     st.session_state['calculo_realizado'] = False  # Inicializado como False
 
