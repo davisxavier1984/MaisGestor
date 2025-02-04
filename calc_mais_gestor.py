@@ -1424,6 +1424,9 @@ if calcular_button:
             # ... (Inicialização das variáveis em st.session_state, expander com inputs - tudo permanece igual)
 
         # Só exibe o RESULTADO do cálculo se o botão "Calcular" já tiver sido pressionado
+        if calcular_button:
+            # Indica que o cálculo foi realizado
+            st.session_state['calculo_realizado'] = True
         if st.session_state['calculo_realizado']:
             # Obtendo o nome do município e UF do st.session_state['dados']
             if st.session_state['dados'] and 'resumosPlanosOrcamentarios' in st.session_state['dados'] and len(st.session_state['dados']['resumosPlanosOrcamentarios']) > 0:
