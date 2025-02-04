@@ -1424,9 +1424,9 @@ if calcular_button:
         
         
         
-        #=============================================== PARTE 8 ===============================================
+#=============================================== PARTE 8 ===============================================
 
-            # ... (Inicialização das variáveis em st.session_state, expander com inputs - tudo permanece igual)
+        # ... (Inicialização das variáveis em st.session_state, expander com inputs - tudo permanece igual)
 
         # Só exibe o RESULTADO do cálculo se o botão "Calcular" já tiver sido pressionado
         if calcular_button:
@@ -1441,9 +1441,35 @@ if calcular_button:
                 municipio_selecionado = "Não informado"
                 uf_selecionada = "Não informado"
 
-            # Cálculos para o texto
+            # CÁLCULO DO CENÁRIO REGULAR (NECESSÁRIO PARA A NOVA LÓGICA)
+            valor_cenario_regular = 0
+            if st.session_state['dados']:
+                # Zera os valores para o cenário regular
+                valor_vinculo_regular = 0
+                valor_qualidade_regular = 0
+                valor_emulti_regular = 0
+
+                # Vínculo e Acompanhamento (Regular)
+                for service in vinculo_values:
+                    if service in selected_services:
+                        valor_vinculo_regular += vinculo_values[service].get('Regular', 0) * selected_services.get(service, 0)
+
+                # Qualidade (Regular)
+                for service in quality_values:
+                    if service in selected_services:
+                        valor_qualidade_regular += quality_values[service].get('Regular', 0) * selected_services.get(service, 0)
+
+                # eMulti (Regular)
+                for service in ["eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:
+                    if selected_services.get(service, 0) > 0:
+                        valor_emulti_regular += quality_values.get(service, {}).get('Regular', 0) * selected_services.get(service, 0)
+
+                # Calcula o valor total do cenário regular
+                valor_cenario_regular = total_fixed_value + valor_vinculo_regular + valor_qualidade_regular + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita + valor_emulti_regular
+
+            # Cálculos para o texto (NOVA LÓGICA)
             total_parametros = st.session_state['valor_esf_eap'] + st.session_state['valor_saude_bucal'] + st.session_state['valor_acs'] + st.session_state['valor_estrategicas']
-            aumento_mensal = total_parametros
+            aumento_mensal = total_parametros - valor_cenario_regular  # Diferença entre o total adicional e o cenário regular
             aumento_anual = aumento_mensal * 12
 
             # Exibindo os valores inseridos em uma tabela chamativa
@@ -1457,7 +1483,7 @@ if calcular_button:
                 if isinstance(val, (int, float)):
                     return f'background-color: #008080; color: white; font-weight: bold; text-align: right; font-size: 1.2rem'
                 return ''
-            
+
             # Define uma paleta de cores
             colors = ['#e6ffe6', '#ccffcc', '#b3ffb3', '#99ff99', '#80ff80']
 
@@ -1469,18 +1495,25 @@ if calcular_button:
 
             st.dataframe(df_parametros.style.format({'Valor': '{:,.2f}'.format}).applymap(style_table, subset=['Valor']).apply(highlight_row, axis=1))
 
-            # Texto descritivo com valores calculados (sem formatação HTML)
+            # Texto descritivo com valores calculados (COM A NOVA LÓGICA)
             st.markdown(f"""
                 <div style="text-align: justify; color: #2c3e50; font-size: 1.1rem">
                     <p>
-                        Considerando os valores informados, espera-se que o <b style="color: #008080">AUMENTO SEJA DE R$ {format_currency(aumento_mensal).replace('R$', '', 1).strip()} MIL MENSAIS</b>, resultando em <b style="color: #008080">APROXIMADAMENTE R$ {format_currency(aumento_anual).replace('R$', '', 1).strip()} MIL ANUAL</b>, comparado com o cenário atual. Estes valores são projetados para o município de <b style="color: #008080">{municipio_selecionado} - {uf_selecionada}</b>, levando em conta os parâmetros adicionais fornecidos.
+                        Considerando os valores informados, e subtraindo o valor do cenário <b>REGULAR ({format_currency(valor_cenario_regular)})</b>,
+                        espera-se que o <b style="color: #008080">AUMENTO SEJA DE R$ {format_currency(aumento_mensal).replace('R$', '', 1).strip()} MIL MENSAIS</b>,
+                        resultando em <b style="color: #008080">APROXIMADAMENTE R$ {format_currency(aumento_anual).replace('R$', '', 1).strip()} MIL ANUAL</b>,
+                        comparado com o cenário de pior desempenho. Estes valores são projetados para o município de
+                        <b style="color: #008080">{municipio_selecionado} - {uf_selecionada}</b>, levando em conta os parâmetros adicionais fornecidos.
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
         else:
             # Se o botão ainda não foi clicado, exibe a mensagem
             st.info("Preencha os parâmetros, selecione o município e clique em 'Calcular' para gerar os resultados.")
-                
+
+        
+        
+        
         
         
     else:
