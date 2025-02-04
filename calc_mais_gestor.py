@@ -242,7 +242,7 @@ def format_currency(value: float | str) -> str:
     if isinstance(value, str):
         try:
             # Remove "R$" e espaços, e substitui vírgulas por pontos
-            value = value.replace('R\$', '').strip().replace('.', '').replace(',', '.')
+            value = value.replace('R\\$', '').strip().replace('.', '').replace(',', '.')
             value = float(value)
         except ValueError:
             return "Valor inválido"
@@ -511,6 +511,8 @@ calcular_button = st.button('Calcular', use_container_width=True)
 
 #=============================================== PARTE 4 ===============================================
 
+#=============================================== PARTE 4 ===============================================
+
 # Carregando dados do config.json (data.json e api_data já foram carregados anteriormente)
 with open("config.json", "r", encoding="utf-8") as f:
     config_data = json.load(f)
@@ -540,11 +542,8 @@ if calcular_button:
             for service in ["eSF", "eAP 30h", "eAP 20h", "eMULTI Ampl.", "eMULTI Compl.", "eMULTI Estrat."]:  # Incluindo eMulti aqui
                 quantity = selected_services.get(service, 0)
                 if quantity > 0:
-                    # Buscar valor editado, senão buscar no fixed_component_values (para eSF e eAP) ou data (para eMulti)
-                    if service in edited_values:
-                        valor = edited_values[service]
-                        st.write(ied)
-                    elif service in ["eSF", "eAP 30h", "eAP 20h"]:
+                    # Buscar valor do config.json ou fixed_component_values
+                    if service in ["eSF", "eAP 30h", "eAP 20h"]:
                         # Obter o IED da session_state - foi definido na PARTE 1
                         ied = st.session_state.get('ied', None)
 
@@ -563,6 +562,10 @@ if calcular_button:
                             valor = 0
                     else:
                         valor = 0
+
+                    # Verifica se o valor foi editado
+                    if service in edited_values:
+                        valor = edited_values[service]
 
                     total_value = valor * quantity
                     fixed_table.append([service, format_currency(valor), quantity, format_currency(total_value)])
@@ -698,15 +701,16 @@ if calcular_button:
             for service in implantacao_manutencao_services:
                 quantity = selected_services.get(service, 0)
                 if quantity > 0:
-                    # Buscar valor editado, senão buscar valor unitário de config.json
+                    # Buscar valor unitário de config.json
+                    try:
+                        valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
+                    except (ValueError, KeyError):
+                        st.error(f"Valor inválido para {service} no config.json.")
+                        valor = 0
+
+                    # Verifica se o valor foi editado
                     if service in edited_values:
                         valor = edited_values[service]
-                    else:
-                        try:
-                            valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
-                        except ValueError:
-                            st.error(f"Valor inválido para {service} no config.json.")
-                            valor = 0
 
                     total = valor * quantity
                     implantacao_manutencao_table.append([service, quantity, format_currency(valor), format_currency(total)])
@@ -737,22 +741,25 @@ if calcular_button:
             for service in saude_bucal_services:
                 quantity = selected_services.get(service, 0)
                 if quantity > 0:
-                    # Buscar valor editado, senão buscar valor unitário de quality_values ou config.json
-                    if service in edited_values:
-                        valor = edited_values[service]
-                    elif service in quality_values:
-                        valor = edited_values[service]
+                    # Buscar valor unitário de quality_values ou config.json
+                    if service in quality_values:
+                        valor = quality_values[service][Classificacao]
                     else:
                         try:
                             valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
-                        except:
+                        except (ValueError, KeyError):
+                            st.error(f"Valor inválido para {service} no config.json.")
                             valor = 0
+
+                    # Verifica se o valor foi editado
+                    if service in edited_values:
+                        valor = edited_values[service]  # Sobrescreve o valor padrão se foi editado
 
                     total = valor * quantity
                     saude_bucal_table.append([service, quantity, format_currency(valor), format_currency(total)])
 
             saude_bucal_df = pd.DataFrame(saude_bucal_table, columns=['Serviço', 'Quantidade', 'Valor Unitário', 'Valor Total'])
-            
+
             # Preencher valores vazios na coluna 'Quantidade' com 0
             saude_bucal_df['Quantidade'] = saude_bucal_df['Quantidade'].replace('', 0)
 
@@ -988,8 +995,6 @@ if calcular_button:
 
     else:
         st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
-
-
 
 
 
