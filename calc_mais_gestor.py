@@ -173,7 +173,12 @@ def main():
 if __name__ == "__main__":
     main()
     
-#=============================================== PARTE 2 ===============================================
+    
+    
+    
+    
+    
+    #=============================================== PARTE 2 ===============================================
 
 # Inicializa os valores no session_state, se não existirem, antes do botão Calcular e antes da PARTE 3
 if 'valor_esf_eap' not in st.session_state:
@@ -185,8 +190,7 @@ if 'valor_acs' not in st.session_state:
 if 'valor_estrategicas' not in st.session_state:
     st.session_state['valor_estrategicas'] = 0.0
 if 'calculo_realizado' not in st.session_state:
-    st.session_state['calculo_realizado'] = 0.0
-
+    st.session_state['calculo_realizado'] = False  # Inicializado como False
 
 # Carrega a configuração do config.json
 with open("config.json", "r", encoding="utf-8") as f:
@@ -202,6 +206,7 @@ subcategories = config_data["subcategories"]
 quality_values = config_data["quality_values"]
 fixed_component_values = config_data["fixed_component_values"]
 service_to_plan = config_data["service_to_plan"] # Carregando service_to_plan
+implantacao_values = config_data["implantacao_values"] # Carregando implantacao_values
 
 # CSS para estilizar os campos (pode ser movido para um arquivo .css separado)
 CSS = """
@@ -268,6 +273,14 @@ def get_estrato(ied: str | None = None) -> str:
 # Aplicar CSS
 st.markdown(CSS, unsafe_allow_html=True)
 
+
+
+
+
+
+
+
+
 #=============================================== PARTE 3 ===============================================
 
 # Carregando dados do config.json (data.json já foi carregado na Parte 1)
@@ -281,7 +294,7 @@ with open("config.json", "r", encoding="utf-8") as f:
 # quality_values = config_data["quality_values"]
 # fixed_component_values = config_data["fixed_component_values"]
 # service_to_plan = config_data["service_to_plan"]
-implantacao_values = config_data["implantacao_values"]
+# implantacao_values = config_data["implantacao_values"]
 
 selected_services: dict[str, int] = {}
 edited_values: dict[str, float] = {}  # Dicionário para armazenar valores editados
@@ -479,11 +492,11 @@ for category, services in updated_categories.items():
 with st.expander("Parâmetros Adicionais", expanded=False):
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state['valor_esf_eap'] = st.number_input("Incentivo Financeiro da APS eSF ou eAP", value=st.session_state['valor_esf_eap'], format="%.2f", key="input_esf_eap")
-        st.session_state['valor_saude_bucal'] = st.number_input("Incentivo Financeiro para Atenção à Saúde Bucal", value=st.session_state['valor_saude_bucal'], format="%.2f", key="input_saude_bucal")
+        st.session_state['valor_esf_eap'] = st.number_input("Incentivo Financeiro da APS eSF ou eAP", value=float(st.session_state['valor_esf_eap']), format="%.2f", key="input_esf_eap")
+        st.session_state['valor_saude_bucal'] = st.number_input("Incentivo Financeiro para Atenção à Saúde Bucal", value=float(st.session_state['valor_saude_bucal']), format="%.2f", key="input_saude_bucal")
     with col2:
-        st.session_state['valor_acs'] = st.number_input("Total ACS", value=st.session_state['valor_acs'], format="%.2f", key="input_acs")
-        st.session_state['valor_estrategicas'] = st.number_input("Ações Estratégicas", value=st.session_state['valor_estrategicas'], format="%.2f", key="input_estrategicas")
+        st.session_state['valor_acs'] = st.number_input("Total ACS", value=float(st.session_state['valor_acs']), format="%.2f", key="input_acs")
+        st.session_state['valor_estrategicas'] = st.number_input("Ações Estratégicas", value=float(st.session_state['valor_estrategicas']), format="%.2f", key="input_estrategicas")
 
     # Cálculos para o total
     total_parametros = st.session_state['valor_esf_eap'] + st.session_state['valor_saude_bucal'] + st.session_state['valor_acs'] + st.session_state['valor_estrategicas']
@@ -509,7 +522,7 @@ calcular_button = st.button('Calcular', use_container_width=True)
 
 
 
-#=============================================== PARTE 4 ===============================================
+
 
 #=============================================== PARTE 4 ===============================================
 
@@ -605,7 +618,7 @@ if calcular_button:
             total_fixed_row = pd.DataFrame({
                 'Serviço': ['Total'],
                 'Valor Unitário': [''],
-                'Quantidade': [''],
+                'Quantidade': [0],  # CORREÇÃO: Usar 0 para quantidade total
                 'Valor Total': [format_currency(total_fixed_value)]
             })
             fixed_df = pd.concat([fixed_df, total_fixed_row], ignore_index=True)
@@ -646,7 +659,7 @@ if calcular_button:
                 'Serviço': ['Total'],
                 'Qualidade': [''],
                 'Valor Unitário': [''],
-                'Quantidade': [''],
+                'Quantidade': [0],  # CORREÇÃO: Usar 0 para quantidade total
                 'Valor Total': [format_currency(total_vinculo_value)]
             })
             vinculo_df = pd.concat([vinculo_df, total_vinculo_row], ignore_index=True)
@@ -679,7 +692,7 @@ if calcular_button:
                 'Serviço': ['Total'],
                 'Qualidade': [''],
                 'Valor Unitário': [''],
-                'Quantidade': [''],
+                'Quantidade': [0],  # CORREÇÃO: Usar 0 para quantidade total
                 'Valor Total': [format_currency(total_quality_value)]
             })
             quality_df = pd.concat([quality_df, total_quality_row], ignore_index=True)
@@ -723,7 +736,7 @@ if calcular_button:
             )
             total_implantacao_manutencao_row = pd.DataFrame({
                 'Serviço': ['Subtotal'],
-                'Quantidade': [''],
+                'Quantidade': [0],  # CORREÇÃO: Usar 0 para quantidade total
                 'Valor Unitário': [''],
                 'Valor Total': [format_currency(total_implantacao_manutencao_value)]
             })
@@ -741,15 +754,12 @@ if calcular_button:
             for service in saude_bucal_services:
                 quantity = selected_services.get(service, 0)
                 if quantity > 0:
-                    # Buscar valor unitário de quality_values ou config.json
-                    if service in quality_values:
-                        valor = quality_values[service][Classificacao]
-                    else:
-                        try:
-                            valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
-                        except (ValueError, KeyError):
-                            st.error(f"Valor inválido para {service} no config.json.")
-                            valor = 0
+                    # Buscar valor unitário de config.json (CORREÇÃO AQUI - quality_values só deve ser usado no componente III)
+                    try:
+                        valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
+                    except (ValueError, KeyError):
+                        st.error(f"Valor inválido para {service} no config.json.")
+                        valor = 0
 
                     # Verifica se o valor foi editado
                     if service in edited_values:
@@ -760,8 +770,8 @@ if calcular_button:
 
             saude_bucal_df = pd.DataFrame(saude_bucal_table, columns=['Serviço', 'Quantidade', 'Valor Unitário', 'Valor Total'])
 
-            # Preencher valores vazios na coluna 'Quantidade' com 0
-            saude_bucal_df['Quantidade'] = saude_bucal_df['Quantidade'].replace('', 0)
+            # Preencher valores vazios na coluna 'Quantidade' com 0 e garantir tipo int
+            saude_bucal_df['Quantidade'] = saude_bucal_df['Quantidade'].fillna(0).astype(int)
 
             total_saude_bucal_value = sum(
                 float(str(val).replace('R$ ', '').replace('.', '').replace(',', '.'))
@@ -770,7 +780,7 @@ if calcular_button:
 
             total_saude_bucal_row = pd.DataFrame({
                 'Serviço': ['Subtotal'],
-                'Quantidade': [''],
+                'Quantidade': [0],  # CORREÇÃO: Usar 0 para quantidade total
                 'Valor Unitário': [''],
                 'Valor Total': [format_currency(total_saude_bucal_value)]
             })
@@ -995,16 +1005,15 @@ if calcular_button:
 
     else:
         st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
-
-
-
-
-
-
-
-
-
-#=============================================== PARTE 7 ===============================================
+        
+        
+        
+        
+        
+        
+        
+        
+        #=============================================== PARTE 7 ===============================================
 
 def gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, selected_services, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita, total_fixed_value):
     """
@@ -1195,18 +1204,21 @@ if calcular_button:
                       .to_html(escape=False), unsafe_allow_html=True)
             st.divider()
 
-
-
-
-
-
-
-
-
-
-
-
-#=============================================== PARTE 5 ===============================================
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        #=============================================== PARTE 5 ===============================================
 
 def gerar_analise_cenarios(total_incentivo_aps, total_incentivo_emulti, total_geral, vinculo_values, quality_values, selected_services, total_fixed_value, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita):
     """
@@ -1234,7 +1246,7 @@ def gerar_analise_cenarios(total_incentivo_aps, total_incentivo_emulti, total_ge
 
     # Cenário de pior desempenho (Regular)
     pior_desempenho_vinculo = sum(vinculo_values[service]['Regular'] * selected_services.get(service, 0) for service in vinculo_values if service in selected_services)
-    pior_desempenpenho_qualidade = sum(quality_values[service]['Regular'] * selected_services.get(service, 0) for service in quality_values if service in selected_services)
+    pior_desempenho_qualidade = sum(quality_values[service]['Regular'] * selected_services.get(service, 0) for service in quality_values if service in selected_services)
 
     # Cenário eMulti Regular
     pior_desempenho_emulti = 0
@@ -1247,7 +1259,7 @@ def gerar_analise_cenarios(total_incentivo_aps, total_incentivo_emulti, total_ge
 
             pior_desempenho_emulti += valor_qualidade * selected_services.get(service, 0)
 
-    valor_pior_desempenho = total_fixed_value + pior_desempenho_vinculo + pior_desempenpenho_qualidade + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita + pior_desempenho_emulti
+    valor_pior_desempenho = total_fixed_value + pior_desempenho_vinculo + pior_desempenho_qualidade + total_implantacao_manutencao_value + total_saude_bucal_value + total_per_capita + pior_desempenho_emulti
 
     # Cenário de melhor desempenho (Ótimo)
     melhor_desempenho_vinculo = sum(vinculo_values[service]['Ótimo'] * selected_services.get(service, 0) for service in vinculo_values if service in selected_services)
@@ -1299,21 +1311,14 @@ if calcular_button:
     else:
         st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
 
-
-
-
-
-
-
-
-
-
 #=============================================== PARTE 6 ===============================================
 
 # Chamando a função e exibindo o resultado (modificado para usar o DataFrame da PARTE 7)
 if calcular_button:
     if st.session_state['dados']:
         # ... (Todos os cálculos das partes anteriores permanecem inalterados)
+        
+        from __main__ import gerar_relatorio_cenarios
 
         # Gerando o relatório de cenários (PARTE 7) e obtendo o DataFrame para o quadro de comparação
         df_comparacao = gerar_relatorio_cenarios(total_geral, vinculo_values, quality_values, selected_services, total_implantacao_manutencao_value, total_saude_bucal_value, total_per_capita, total_fixed_value)
@@ -1417,13 +1422,8 @@ if calcular_button:
                      'Variação %': format_variacao_porcentagem}) # Usando a função de formatação
 
         st.dataframe(styled_df)
-        
-        
-        
-        
-        
-        
-        
+
+
 #=============================================== PARTE 8 ===============================================
 
         # ... (Inicialização das variáveis em st.session_state, expander com inputs - tudo permanece igual)
@@ -1476,7 +1476,11 @@ if calcular_button:
             st.subheader("Projeção de Aumento de Recursos")
             df_parametros = pd.DataFrame({
                 'Parâmetro': ["Incentivo Financeiro da APS eSF ou eAP", "Incentivo Financeiro para Atenção à Saúde Bucal", "Total ACS", "Ações Estratégicas", "Total Adicional"],
-                'Valor': [st.session_state['valor_esf_eap'], st.session_state['valor_saude_bucal'], st.session_state['valor_acs'], st.session_state['valor_estrategicas'], total_parametros]
+                'Valor': [float(st.session_state['valor_esf_eap']),  # Convertido para float
+                          float(st.session_state['valor_saude_bucal']),  # Convertido para float
+                          float(st.session_state['valor_acs']),  # Convertido para float
+                          float(st.session_state['valor_estrategicas']),  # Convertido para float
+                          float(total_parametros)]  # Convertido para float
             })
 
             def style_table(val):
@@ -1493,7 +1497,7 @@ if calcular_button:
                 else:
                     return [f'background-color: {colors[row.name % len(colors)]}; color: #2c3e50;'] * len(row) # Cor de fundo para as demais linhas, alternando as cores
 
-            st.dataframe(df_parametros.style.format({'Valor': '{:,.2f}'.format}).applymap(style_table, subset=['Valor']).apply(highlight_row, axis=1))
+            st.dataframe(df_parametros.style.format({'Valor': '{:,.2f}'.format}).map(style_table, subset=['Valor']).apply(highlight_row, axis=1))
 
             # Texto descritivo com valores calculados (COM A NOVA LÓGICA)
             st.markdown(f"""
@@ -1511,11 +1515,6 @@ if calcular_button:
             # Se o botão ainda não foi clicado, exibe a mensagem
             st.info("Preencha os parâmetros, selecione o município e clique em 'Calcular' para gerar os resultados.")
 
-        
-        
-        
-        
-        
     else:
         st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
-
+        
