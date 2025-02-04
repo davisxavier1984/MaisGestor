@@ -1442,7 +1442,7 @@ if calcular_button:
             aumento_anual = aumento_mensal * 12
 
             # Exibindo os valores inseridos em uma tabela chamativa
-            st.subheader("Valores Informados")
+            st.subheader("Projeção de Aumento de Recursos")
             df_parametros = pd.DataFrame({
                 'Parâmetro': ["Incentivo Financeiro da APS eSF ou eAP", "Incentivo Financeiro para Atenção à Saúde Bucal", "Total ACS", "Ações Estratégicas", "Total Adicional"],
                 'Valor': [st.session_state['valor_esf_eap'], st.session_state['valor_saude_bucal'], st.session_state['valor_acs'], st.session_state['valor_estrategicas'], total_parametros]
