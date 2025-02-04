@@ -175,6 +175,17 @@ if __name__ == "__main__":
     
 #=============================================== PARTE 2 ===============================================
 
+# Inicializa os valores no session_state, se não existirem, antes do botão Calcular e antes da PARTE 3
+if 'valor_esf_eap' not in st.session_state:
+    st.session_state['valor_esf_eap'] = 0.0
+if 'valor_saude_bucal' not in st.session_state:
+    st.session_state['valor_saude_bucal'] = 0.0
+if 'valor_acs' not in st.session_state:
+    st.session_state['valor_acs'] = 0.0
+if 'valor_estrategicas' not in st.session_state:
+    st.session_state['valor_estrategicas'] = 0.0
+
+
 # Carrega a configuração do config.json
 with open("config.json", "r", encoding="utf-8") as f:
     config_data = json.load(f)
@@ -229,7 +240,7 @@ def format_currency(value: float | str) -> str:
     if isinstance(value, str):
         try:
             # Remove "R$" e espaços, e substitui vírgulas por pontos
-            value = value.replace('R$', '').strip().replace('.', '').replace(',', '.')
+            value = value.replace('R\$', '').strip().replace('.', '').replace(',', '.')
             value = float(value)
         except ValueError:
             return "Valor inválido"
@@ -459,6 +470,26 @@ for category, services in updated_categories.items():
                             total_implantacao = 0
                         st.text_input(f"Subtotal", value=format_currency(total_implantacao),
                                       key=key_s, disabled=True)
+
+#========================================================= ENTRADA DA PARTE 8 ==========================
+
+# Interface para inserção dos valores com st.number_input DENTRO de um st.expander
+with st.expander("Parâmetros Adicionais", expanded=False):
+    col1, col2 = st.columns(2)
+    with col1:
+        st.session_state['valor_esf_eap'] = st.number_input("Incentivo Financeiro da APS eSF ou eAP", value=st.session_state['valor_esf_eap'], format="%.2f", key="input_esf_eap")
+        st.session_state['valor_saude_bucal'] = st.number_input("Incentivo Financeiro para Atenção à Saúde Bucal", value=st.session_state['valor_saude_bucal'], format="%.2f", key="input_saude_bucal")
+    with col2:
+        st.session_state['valor_acs'] = st.number_input("Total ACS", value=st.session_state['valor_acs'], format="%.2f", key="input_acs")
+        st.session_state['valor_estrategicas'] = st.number_input("Ações Estratégicas", value=st.session_state['valor_estrategicas'], format="%.2f", key="input_estrategicas")
+
+    # Cálculos para o total
+    total_parametros = st.session_state['valor_esf_eap'] + st.session_state['valor_saude_bucal'] + st.session_state['valor_acs'] + st.session_state['valor_estrategicas']
+
+    # Exibindo o total de forma chamativa dentro do expander
+    st.markdown(f"<p style='text-align: center; font-size: 1.5rem; color: #008080; font-weight: bold'>Total Adicional: {format_currency(total_parametros)}</p>", unsafe_allow_html=True)
+
+#========================================================= ENTRADA DA PARTE 8 ==========================
 
 # Nova linha para os dropdowns e botão
 col_classificacao, col_vinculo = st.columns([1, 1])
@@ -694,7 +725,7 @@ if calcular_button:
 
             st.table(implantacao_manutencao_df)
 
-              # V - COMPONENTE PARA ATENÇÃO À SAÚDE BUCAL
+            # V - COMPONENTE PARA ATENÇÃO À SAÚDE BUCAL
             st.subheader("V - Componente para Atenção à Saúde Bucal")
             saude_bucal_table: list[list[str | int | float]] = []
 
@@ -704,17 +735,15 @@ if calcular_button:
             for service in saude_bucal_services:
                 quantity = selected_services.get(service, 0)
                 if quantity > 0:
-                    # Buscar valor editado, senão buscar valor unitário de config.json (data)
+                    # Buscar valor editado, senão buscar valor unitário de quality_values ou config.json
                     if service in edited_values:
                         valor = edited_values[service]
-                        print(f"Valor editado para {service}: {valor}") # DEBUG
+                    elif service in quality_values:
+                        valor = edited_values[service]
                     else:
                         try:
-                            # Usar apenas o valor de data[service]['valor']
                             valor = float(data[service]['valor'].replace('R$ ', '').replace('.', '').replace(',', '.'))
-                            print(f"Valor do config.json para {service}: {valor}") # DEBUG
-                        except (ValueError, KeyError):
-                            st.error(f"Valor inválido para {service} no config.json.")
+                        except:
                             valor = 0
 
                     total = valor * quantity
@@ -1381,6 +1410,69 @@ if calcular_button:
                      'Variação %': format_variacao_porcentagem}) # Usando a função de formatação
 
         st.dataframe(styled_df)
+        
+        
+        
+        
+        
+        
+        
+        #=============================================== PARTE 8 ===============================================
 
+            # ... (Inicialização das variáveis em st.session_state, expander com inputs - tudo permanece igual)
+
+        # Só exibe o RESULTADO do cálculo se o botão "Calcular" já tiver sido pressionado
+        if st.session_state['calculo_realizado']:
+            # Obtendo o nome do município e UF do st.session_state['dados']
+            if st.session_state['dados'] and 'resumosPlanosOrcamentarios' in st.session_state['dados'] and len(st.session_state['dados']['resumosPlanosOrcamentarios']) > 0:
+                municipio_selecionado = st.session_state['dados']['resumosPlanosOrcamentarios'][0].get('noMunicipio', 'Não informado')
+                uf_selecionada = st.session_state['dados']['resumosPlanosOrcamentarios'][0].get('sgUf', 'Não informado')
+            else:
+                municipio_selecionado = "Não informado"
+                uf_selecionada = "Não informado"
+
+            # Cálculos para o texto
+            total_parametros = st.session_state['valor_esf_eap'] + st.session_state['valor_saude_bucal'] + st.session_state['valor_acs'] + st.session_state['valor_estrategicas']
+            aumento_mensal = total_parametros
+            aumento_anual = aumento_mensal * 12
+
+            # Exibindo os valores inseridos em uma tabela chamativa
+            st.subheader("Valores Informados")
+            df_parametros = pd.DataFrame({
+                'Parâmetro': ["Incentivo Financeiro da APS eSF ou eAP", "Incentivo Financeiro para Atenção à Saúde Bucal", "Total ACS", "Ações Estratégicas", "Total Adicional"],
+                'Valor': [st.session_state['valor_esf_eap'], st.session_state['valor_saude_bucal'], st.session_state['valor_acs'], st.session_state['valor_estrategicas'], total_parametros]
+            })
+
+            def style_table(val):
+                if isinstance(val, (int, float)):
+                    return f'background-color: #008080; color: white; font-weight: bold; text-align: right; font-size: 1.2rem'
+                return ''
+            
+            # Define uma paleta de cores
+            colors = ['#e6ffe6', '#ccffcc', '#b3ffb3', '#99ff99', '#80ff80']
+
+            def highlight_row(row):
+                if row.name == len(df_parametros) - 1:  # Última linha (Total Adicional)
+                    return [f'background-color: #008080; color: white;'] * len(row) # Cor de fundo para o Total
+                else:
+                    return [f'background-color: {colors[row.name % len(colors)]}; color: #2c3e50;'] * len(row) # Cor de fundo para as demais linhas, alternando as cores
+
+            st.dataframe(df_parametros.style.format({'Valor': '{:,.2f}'.format}).applymap(style_table, subset=['Valor']).apply(highlight_row, axis=1))
+
+            # Texto descritivo com valores calculados (sem formatação HTML)
+            st.markdown(f"""
+                <div style="text-align: justify; color: #2c3e50; font-size: 1.1rem">
+                    <p>
+                        Considerando os valores informados, espera-se que o <b style="color: #008080">AUMENTO SEJA DE R$ {format_currency(aumento_mensal).replace('R$', '', 1).strip()} MIL MENSAIS</b>, resultando em <b style="color: #008080">APROXIMADAMENTE R$ {format_currency(aumento_anual).replace('R$', '', 1).strip()} MIL ANUAL</b>, comparado com o cenário atual. Estes valores são projetados para o município de <b style="color: #008080">{municipio_selecionado} - {uf_selecionada}</b>, levando em conta os parâmetros adicionais fornecidos.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            # Se o botão ainda não foi clicado, exibe a mensagem
+            st.info("Preencha os parâmetros, selecione o município e clique em 'Calcular' para gerar os resultados.")
+                
+        
+        
     else:
         st.error("Não há dados para calcular. Realize uma consulta na API primeiro.")
+
