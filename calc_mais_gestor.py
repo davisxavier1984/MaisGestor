@@ -114,7 +114,7 @@ def main():
     with col2:
         st.image('logo_colorida_mg.png', width=200)
 
-    st.title("Calculadora PAP")
+    st.title("Mais PAP Maisgestor")
     style_metric_cards()
 
     with st.expander("🔍 Parâmetros de Consulta", expanded=True):
