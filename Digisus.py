@@ -29,14 +29,7 @@ data_atual = datetime.date.today()
 data_formatada = data_atual.strftime("%d de %B de %Y")
 
 
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
